@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-12 16:38:39.333006",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_q1hf",
+  "site",
+  "date",
+  "fuel_tanker",
+  "column_break_kjbc",
+  "reg_no",
+  "make",
+  "type",
+  "odometer_km",
+  "fuel_issued_lts",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_q1hf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Fuel Utilization",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "odometer_km",
+   "fieldtype": "Int",
+   "label": "Odometer (KM)"
+  },
+  {
+   "fieldname": "fuel_issued_lts",
+   "fieldtype": "Int",
+   "label": "Fuel Issued (LTS)"
+  },
+  {
+   "fieldname": "column_break_kjbc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "make",
+   "fieldtype": "Link",
+   "label": "Make",
+   "options": "Make"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Link",
+   "label": "Type",
+   "options": "Type"
+  },
+  {
+   "fieldname": "fuel_tanker",
+   "fieldtype": "Link",
+   "label": "Fuel Tanker",
+   "options": "Fuel Tanker"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "reg_no",
+   "fieldtype": "Link",
+   "label": "Reg. No",
+   "options": "Registration No"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-01-12 17:00:57.563515",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Utilization",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
