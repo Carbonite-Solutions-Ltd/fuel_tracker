@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_q1hf",
+  "resource_type",
   "site",
   "date",
   "fuel_tanker",
@@ -80,12 +81,20 @@
    "fieldtype": "Link",
    "label": "Reg. No",
    "options": "Registration No"
+  },
+  {
+   "fieldname": "resource_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Resource Type",
+   "options": "\nTrucks\nEquipment",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-12 17:00:57.563515",
+ "modified": "2024-02-14 18:56:49.287080",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Utilization",
