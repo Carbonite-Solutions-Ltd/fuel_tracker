@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-14 17:55:37.588087",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_ma6e",
+  "date",
+  "site",
+  "column_break_pwpl",
+  "fuel_tanker",
+  "fuel_supplied",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_ma6e",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "column_break_pwpl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fuel_tanker",
+   "fieldtype": "Link",
+   "label": "Fuel Tanker",
+   "options": "Fuel Tanker"
+  },
+  {
+   "depends_on": "eval:doc.entry_type == \"Fuel Supply\"",
+   "fieldname": "fuel_supplied",
+   "fieldtype": "Float",
+   "label": "Fuel Supplied"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Fuel Supplied",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-02-15 10:06:14.827772",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Supplied",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

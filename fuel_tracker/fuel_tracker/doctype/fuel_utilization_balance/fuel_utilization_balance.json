@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-15 09:32:59.216494",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_fmuu",
+  "amended_from",
+  "date",
+  "balance",
+  "column_break_lzjq",
+  "site",
+  "fuel_tanker"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_fmuu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Fuel Utilization Balance",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Float",
+   "label": "Balance"
+  },
+  {
+   "fieldname": "column_break_lzjq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "fuel_tanker",
+   "fieldtype": "Link",
+   "label": "Fuel Tanker",
+   "options": "Fuel Tanker"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-02-15 09:35:40.096793",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Utilization Balance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
