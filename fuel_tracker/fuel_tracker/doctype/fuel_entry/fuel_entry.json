@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "FENT-.#####",
  "creation": "2024-02-15 09:42:28.359296",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -61,11 +62,10 @@
    "fieldtype": "Section Break"
   },
   {
-   "fetch_from": "fuel_utilization_balance.balance",
+   "fetch_from": ".balance",
    "fieldname": "previous_balance",
-   "fieldtype": "Link",
-   "label": "Previous Balance",
-   "options": "Fuel Utilization Balance"
+   "fieldtype": "Float",
+   "label": "Previous Balance"
   },
   {
    "fieldname": "column_break_xyye",
@@ -77,13 +77,13 @@
    "label": "Current Balance"
   },
   {
-   "depends_on": "eval:doc.utilization_type == \"Fuel Supplied\"",
+   "depends_on": "eval:doc.utilization_type == 'Supplied'",
    "fieldname": "litres_supplied",
    "fieldtype": "Float",
    "label": "Litres Supplied"
   },
   {
-   "depends_on": "eval:doc.utilization_type == \"Fuel Dispensed\"",
+   "depends_on": "eval:doc.utilization_type == 'Dispensed'",
    "fieldname": "litres_dispensed",
    "fieldtype": "Float",
    "label": "Litres Dispensed"
@@ -98,21 +98,17 @@
    "fieldname": "fuel_utilization_balance",
    "fieldtype": "Link",
    "label": "Fuel Utilization Balance",
-   "options": "Fuel Utilization Balance"
+   "options": "Fuel Balance"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "link_doctype": "Fuel Utilization Balance",
-   "link_fieldname": "name"
-  }
- ],
- "modified": "2024-02-15 13:02:53.754356",
+ "links": [],
+ "modified": "2024-02-15 20:14:23.044681",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

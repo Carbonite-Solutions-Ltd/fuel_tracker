@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "FSUP-.#####",
  "creation": "2024-02-14 17:55:37.588087",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -40,7 +41,6 @@
    "options": "Fuel Tanker"
   },
   {
-   "depends_on": "eval:doc.entry_type == \"Fuel Supply\"",
    "fieldname": "fuel_supplied",
    "fieldtype": "Float",
    "label": "Fuel Supplied"
@@ -59,10 +59,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-15 10:06:14.827772",
+ "modified": "2024-02-15 19:56:48.856258",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Supplied",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
