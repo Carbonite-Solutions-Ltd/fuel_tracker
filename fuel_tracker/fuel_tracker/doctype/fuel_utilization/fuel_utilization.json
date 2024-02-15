@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_q1hf",
+  "resource",
   "resource_type",
   "site",
   "date",
@@ -53,12 +54,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "resource.make",
    "fieldname": "make",
    "fieldtype": "Link",
    "label": "Make",
    "options": "Make"
   },
   {
+   "fetch_from": "resource.type",
    "fieldname": "type",
    "fieldtype": "Link",
    "label": "Type",
@@ -77,24 +80,29 @@
    "options": "Site"
   },
   {
+   "fetch_from": "resource.reg_no",
    "fieldname": "reg_no",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Reg. No",
-   "options": "Registration No"
+   "options": "Resource"
   },
   {
+   "fieldname": "resource",
+   "fieldtype": "Link",
+   "label": "Resource",
+   "options": "Resource"
+  },
+  {
+   "fetch_from": "resource.resource_type",
    "fieldname": "resource_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Resource Type",
-   "options": "\nTrucks\nEquipment",
-   "reqd": 1
+   "fieldtype": "Data",
+   "label": "Resource Type"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-14 18:56:49.287080",
+ "modified": "2024-02-15 12:14:07.669078",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Utilization",

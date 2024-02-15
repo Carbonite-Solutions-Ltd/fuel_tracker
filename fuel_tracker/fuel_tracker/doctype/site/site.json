@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:site_name",
  "creation": "2024-01-12 16:56:24.881411",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,15 +12,17 @@
   {
    "fieldname": "site_name",
    "fieldtype": "Data",
-   "label": "Site Name"
+   "label": "Site Name",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-12 16:56:44.732535",
+ "modified": "2024-02-15 10:42:44.843336",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Site",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

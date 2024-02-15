@@ -1,26 +1,26 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-02-14 17:55:37.588087",
+ "creation": "2024-02-15 09:42:28.359296",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_ma6e",
-  "entry_type",
+  "section_break_aa4j",
   "date",
-  "column_break_pwpl",
+  "utilization_type",
+  "amended_from",
+  "column_break_nups",
   "site",
   "fuel_tanker",
-  "fuel_balance",
-  "fuel_supplied",
-  "fuel_issued",
-  "amended_from"
+  "fuel_utilization_balance",
+  "section_break_soib",
+  "previous_balance",
+  "current_balance",
+  "column_break_xyye",
+  "litres_supplied",
+  "litres_dispensed"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_ma6e",
-   "fieldtype": "Section Break"
-  },
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
@@ -44,43 +44,72 @@
    "options": "Fuel Tanker"
   },
   {
-   "depends_on": "eval:doc.entry_type == \"Opening Balance\"",
-   "fieldname": "fuel_balance",
-   "fieldtype": "Float",
-   "label": "Fuel Balance"
-  },
-  {
-   "fieldname": "entry_type",
-   "fieldtype": "Select",
-   "label": "Entry Type",
-   "options": "\nFuel Supply\nOpening Balance\nFuel Utilization"
-  },
-  {
-   "fieldname": "column_break_pwpl",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.entry_type == \"Fuel Supply\"",
-   "fieldname": "fuel_supplied",
-   "fieldtype": "Float",
-   "label": "Fuel Supplied"
-  },
-  {
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date"
   },
   {
-   "depends_on": "eval:doc.entry_type == \"Fuel Utilization\"",
-   "fieldname": "fuel_issued",
+   "fieldname": "section_break_aa4j",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_nups",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_soib",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "fuel_utilization_balance.balance",
+   "fieldname": "previous_balance",
+   "fieldtype": "Link",
+   "label": "Previous Balance",
+   "options": "Fuel Utilization Balance"
+  },
+  {
+   "fieldname": "column_break_xyye",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_balance",
    "fieldtype": "Float",
-   "label": "Fuel Issued (LTS)"
+   "label": "Current Balance"
+  },
+  {
+   "depends_on": "eval:doc.utilization_type == \"Fuel Supplied\"",
+   "fieldname": "litres_supplied",
+   "fieldtype": "Float",
+   "label": "Litres Supplied"
+  },
+  {
+   "depends_on": "eval:doc.utilization_type == \"Fuel Dispensed\"",
+   "fieldname": "litres_dispensed",
+   "fieldtype": "Float",
+   "label": "Litres Dispensed"
+  },
+  {
+   "fetch_from": "previous_balance.fuel_utilization_type",
+   "fieldname": "utilization_type",
+   "fieldtype": "Data",
+   "label": "Utilization Type"
+  },
+  {
+   "fieldname": "fuel_utilization_balance",
+   "fieldtype": "Link",
+   "label": "Fuel Utilization Balance",
+   "options": "Fuel Utilization Balance"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2024-02-14 19:04:08.327181",
+ "links": [
+  {
+   "link_doctype": "Fuel Utilization Balance",
+   "link_fieldname": "name"
+  }
+ ],
+ "modified": "2024-02-15 13:02:53.754356",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",

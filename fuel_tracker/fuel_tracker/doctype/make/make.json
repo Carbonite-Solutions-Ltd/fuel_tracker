@@ -1,25 +1,28 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:make_name",
  "creation": "2024-01-12 16:41:49.027914",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "name1"
+  "make_name"
  ],
  "fields": [
   {
-   "fieldname": "name1",
-   "fieldtype": "Date",
-   "label": "Name"
+   "fieldname": "make_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-12 16:42:29.472807",
+ "modified": "2024-02-15 11:51:14.537837",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Make",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

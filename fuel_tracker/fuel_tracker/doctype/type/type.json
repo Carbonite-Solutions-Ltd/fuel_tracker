@@ -1,25 +1,20 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:type",
  "creation": "2024-01-12 16:43:16.015764",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "type",
-  "column_break_wwif",
-  "make"
+  "column_break_wwif"
  ],
  "fields": [
   {
    "fieldname": "type",
    "fieldtype": "Data",
-   "label": "Type"
-  },
-  {
-   "fieldname": "make",
-   "fieldtype": "Link",
-   "label": "Make",
-   "options": "Make"
+   "label": "Type",
+   "unique": 1
   },
   {
    "fieldname": "column_break_wwif",
@@ -28,10 +23,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-12 16:44:28.472799",
+ "modified": "2024-02-15 11:57:13.655470",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Type",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
