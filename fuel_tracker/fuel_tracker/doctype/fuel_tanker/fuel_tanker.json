@@ -1,20 +1,16 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:tanker",
  "creation": "2024-01-12 16:54:06.136264",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "name1",
+  "tanker",
   "column_break_sdli",
   "site"
  ],
  "fields": [
-  {
-   "fieldname": "name1",
-   "fieldtype": "Data",
-   "label": "Name"
-  },
   {
    "fieldname": "column_break_sdli",
    "fieldtype": "Column Break"
@@ -24,14 +20,21 @@
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "fieldname": "tanker",
+   "fieldtype": "Data",
+   "label": "Tanker",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-12 16:57:29.224892",
+ "modified": "2024-02-15 10:47:49.049946",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tanker",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "FUB-.date.#####",
  "creation": "2024-02-15 09:32:59.216494",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,7 +11,12 @@
   "balance",
   "column_break_lzjq",
   "site",
-  "fuel_tanker"
+  "fuel_tanker",
+  "fuel_utilization_type",
+  "reference_documents_section",
+  "fuel_utilization_id",
+  "column_break_ubmr",
+  "fuel_supplied_id"
  ],
  "fields": [
   {
@@ -34,6 +39,7 @@
    "label": "Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "balance",
    "fieldtype": "Float",
    "label": "Balance"
@@ -53,15 +59,43 @@
    "fieldtype": "Link",
    "label": "Fuel Tanker",
    "options": "Fuel Tanker"
+  },
+  {
+   "fieldname": "fuel_utilization_type",
+   "fieldtype": "Select",
+   "label": "Fuel Utilization Type",
+   "options": "\nSupplied\nDispensed"
+  },
+  {
+   "fieldname": "fuel_supplied_id",
+   "fieldtype": "Link",
+   "label": "Fuel Supplied ID",
+   "options": "Fuel Supplied"
+  },
+  {
+   "fieldname": "fuel_utilization_id",
+   "fieldtype": "Link",
+   "label": "Fuel Utilization ID",
+   "options": "Fuel Utilization"
+  },
+  {
+   "fieldname": "reference_documents_section",
+   "fieldtype": "Section Break",
+   "label": "Reference Documents"
+  },
+  {
+   "fieldname": "column_break_ubmr",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-15 09:35:40.096793",
+ "modified": "2024-02-15 13:08:01.937083",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Utilization Balance",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

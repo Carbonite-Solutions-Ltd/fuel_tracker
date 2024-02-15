@@ -1,44 +1,55 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-01-12 16:46:06.171514",
+ "autoname": "prompt",
+ "creation": "2024-02-15 11:20:43.148141",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "reg_no",
-  "column_break_egrh",
+  "type",
   "make",
-  "type"
+  "column_break_plxi",
+  "resource_type"
  ],
  "fields": [
   {
-   "fieldname": "reg_no",
-   "fieldtype": "Data",
-   "label": "Reg. No"
+   "fieldname": "type",
+   "fieldtype": "Link",
+   "label": "Type",
+   "options": "Type"
   },
   {
-   "fieldname": "column_break_egrh",
-   "fieldtype": "Column Break"
-  },
-  {
+   "fetch_from": ".make",
    "fieldname": "make",
    "fieldtype": "Link",
    "label": "Make",
    "options": "Make"
   },
   {
-   "fieldname": "type",
-   "fieldtype": "Link",
-   "label": "Type",
-   "options": "Type"
+   "fieldname": "reg_no",
+   "fieldtype": "Data",
+   "label": "Reg. No",
+   "options": "Registration No"
+  },
+  {
+   "fieldname": "column_break_plxi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resource_type",
+   "fieldtype": "Select",
+   "label": "Resource Type",
+   "options": "\nTruck\nEquipment"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-12 16:47:30.228931",
+ "modified": "2024-02-15 11:59:35.519840",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
- "name": "Registration No",
+ "name": "Resource",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
