@@ -34,6 +34,7 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "As @"
@@ -49,12 +50,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
    "label": "Fuel Tanker",
@@ -62,22 +65,18 @@
    "unique": 1
   },
   {
-   "fieldname": "fuel_utilization_type",
-   "fieldtype": "Select",
-   "label": "Fuel Utilization Type",
-   "options": "\nSupplied\nDispensed"
-  },
-  {
+   "allow_on_submit": 1,
    "fieldname": "fuel_supplied_id",
    "fieldtype": "Link",
    "label": "Fuel Supplied ID",
    "options": "Fuel Supplied"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "fuel_utilization_id",
    "fieldtype": "Link",
    "label": "Fuel Utilization ID",
-   "options": "Fuel Utilization"
+   "options": "Fuel Used"
   },
   {
    "fieldname": "reference_documents_section",
@@ -87,15 +86,22 @@
   {
    "fieldname": "column_break_ubmr",
    "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "fuel_utilization_type",
+   "fieldtype": "Select",
+   "label": "Fuel Utilization Type",
+   "options": "\nSupplied\nDispensed"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-15 13:22:13.826750",
+ "modified": "2024-02-15 20:14:03.378141",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
- "name": "Fuel Utilization Balance",
+ "name": "Fuel Balance",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [

@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestFuelUtilizationBalance(FrappeTestCase):
+class TestFuelBalance(FrappeTestCase):
 	pass
