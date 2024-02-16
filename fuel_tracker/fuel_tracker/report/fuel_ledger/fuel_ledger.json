@@ -1,0 +1,36 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2024-02-16 09:48:30.558529",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "Hosa Letter Head",
+ "letterhead": null,
+ "modified": "2024-02-16 09:48:30.558529",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Ledger",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Fuel Entry",
+ "report_name": "Fuel Ledger",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "Employee Self Service"
+  }
+ ]
+}

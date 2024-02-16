@@ -13,13 +13,17 @@
   "column_break_nups",
   "site",
   "fuel_tanker",
-  "fuel_utilization_balance",
   "section_break_soib",
   "previous_balance",
   "current_balance",
   "column_break_xyye",
   "litres_supplied",
-  "litres_dispensed"
+  "litres_dispensed",
+  "refrence_documents_section",
+  "fuel_utilization_id",
+  "fuel_utilization_balance",
+  "column_break_oszc",
+  "fuel_supplied_id"
  ],
  "fields": [
   {
@@ -97,14 +101,35 @@
   {
    "fieldname": "fuel_utilization_balance",
    "fieldtype": "Link",
-   "label": "Fuel Utilization Balance",
+   "label": "Fuel Balance ID",
    "options": "Fuel Balance"
+  },
+  {
+   "fieldname": "refrence_documents_section",
+   "fieldtype": "Section Break",
+   "label": "Refrence Documents"
+  },
+  {
+   "fieldname": "fuel_utilization_id",
+   "fieldtype": "Link",
+   "label": "Fuel Utilization ID",
+   "options": "Fuel Used"
+  },
+  {
+   "fieldname": "column_break_oszc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fuel_supplied_id",
+   "fieldtype": "Link",
+   "label": "Fuel Supplied ID",
+   "options": "Fuel Supplied"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-15 20:14:23.044681",
+ "modified": "2024-02-16 09:04:17.837142",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",

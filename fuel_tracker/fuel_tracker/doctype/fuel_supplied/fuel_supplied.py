@@ -16,9 +16,9 @@ class FuelSupplied(Document):
             balance_entry = frappe.get_doc("Fuel Balance", existing_balance[0].name)
             balance_entry.date = self.date
             balance_entry.balance += self.fuel_supplied
-            balance_entry.fuel_utilization_type = "Supplied"
+            balance_entry.fuel_used_type = "Supplied"
             balance_entry.fuel_supplied_id = self.name
-            balance_entry.fuel_utilization_id = ""
+            balance_entry.fuel_used_id = ""
             balance_entry.submit()
             frappe.db.commit()
         else:
@@ -29,9 +29,9 @@ class FuelSupplied(Document):
                 "fuel_tanker": self.fuel_tanker,
                 "balance": self.fuel_supplied,
                 "site": self.site,
-                "fuel_utilization_type": "Supplied",
+                "fuel_used_type": "Supplied",
                 "fuel_supplied_id": self.name,
-                "fuel_utilization_id": None
+                "fuel_used_id": ""
             })
             new_balance_entry.insert()
             new_balance_entry.submit()
