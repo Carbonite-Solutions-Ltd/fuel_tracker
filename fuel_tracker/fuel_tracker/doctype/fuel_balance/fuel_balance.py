@@ -36,7 +36,6 @@ class FuelBalance(Document):
             "previous_balance": previous_balance,
             "litres_supplied": fuel_supplied_doc.fuel_supplied if fuel_supplied_doc else 0,
             "litres_dispensed": fuel_utilization_doc.fuel_issued_lts if fuel_utilization_doc else 0,
-            "fuel_utilization_balance": self.name,
             "fuel_utilization_id": self.fuel_used_id,
             "fuel_supplied_id": self.fuel_supplied_id
         })

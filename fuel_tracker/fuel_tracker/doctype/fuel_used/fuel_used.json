@@ -11,8 +11,8 @@
   "resource",
   "resource_type",
   "column_break_pdgt",
-  "site",
   "fuel_tanker",
+  "site",
   "amended_from",
   "section_break_obqz",
   "reg_no",
@@ -50,6 +50,7 @@
    "label": "Resource Type"
   },
   {
+   "fetch_from": "fuel_tanker.site",
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
@@ -65,6 +66,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": ".",
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
    "label": "Fuel Tanker",
@@ -75,7 +77,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "fetch_from": "resource.make",
+   "fetch_from": "resource.reg_no",
    "fieldname": "reg_no",
    "fieldtype": "Data",
    "label": "Reg. No"
@@ -100,7 +102,7 @@
   },
   {
    "fieldname": "odometer_km",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Odometer (KM)"
   },
   {
@@ -112,7 +114,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 14:00:58.320030",
+ "modified": "2024-02-16 17:20:03.149530",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",
