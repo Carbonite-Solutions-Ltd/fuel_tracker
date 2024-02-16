@@ -16,44 +16,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Fuel Activity",
-   "link_count": 3,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Fuel Supplied",
-   "link_count": 0,
-   "link_to": "Fuel Supplied",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Fuel Utilization",
-   "link_count": 0,
-   "link_to": "Fuel Used",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Fuel Utilization Balance",
-   "link_count": 0,
-   "link_to": "Fuel Balance",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Master",
    "link_count": 3,
    "onboard": 0,
@@ -88,9 +50,47 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fuel Activity",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fuel Supplied",
+   "link_count": 0,
+   "link_to": "Fuel Supplied",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fuel Used",
+   "link_count": 0,
+   "link_to": "Fuel Used",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fuel Balance",
+   "link_count": 0,
+   "link_to": "Fuel Balance",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2024-02-15 20:15:20.850509",
+ "modified": "2024-02-16 08:28:21.390594",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tracker",
