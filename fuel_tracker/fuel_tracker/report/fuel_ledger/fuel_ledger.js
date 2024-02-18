@@ -8,6 +8,14 @@ frappe.query_reports["Fuel Ledger"] = {
             "default": frappe.defaults.get_user_default("Company"),
         },
         {
+            "fieldname": "docstatus",
+            "label": __("Status"),
+            "fieldtype": "Select",
+            "options": ["Submitted", "Cancelled", "Draft"], // Add options as per your doctype's status values
+            "default": "Submitted" // Optionally set a default status
+        },
+        
+        {
             "fieldname": "from_date",
             "label": __("From Date"),
             "fieldtype": "Date",

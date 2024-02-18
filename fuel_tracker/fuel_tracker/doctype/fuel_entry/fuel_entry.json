@@ -102,7 +102,6 @@
   {
    "fieldname": "refrence_documents_section",
    "fieldtype": "Section Break",
-   "hidden": 1,
    "label": "Refrence Documents",
    "read_only": 1
   },
@@ -126,7 +125,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 17:59:42.732902",
+ "modified": "2024-02-18 15:41:22.499933",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",

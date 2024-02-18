@@ -28,7 +28,7 @@ def get_data(filters):
     data = frappe.db.sql(f"""
         SELECT
             fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
-            fu.resource_type, fu.resource, fe.litres_supplied, fe.litres_dispensed,
+            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed,
             fe.previous_balance, fe.current_balance,
             CASE
                 WHEN fe.utilization_type = 'Supplied' THEN fe.fuel_supplied_id
@@ -53,6 +53,8 @@ def get_data(filters):
 def get_conditions(filters):
     """Returns SQL conditions based on filters."""
     conditions = "1=1"
+    status_map = {"Draft": 0, "Submitted": 1, "Cancelled": 2}  # Map string values to integers
+
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"
     if filters.get("to_date"):
@@ -63,4 +65,16 @@ def get_conditions(filters):
         conditions += " AND fe.site IN %(site)s"
     if filters.get("resource"):
         conditions += " AND fu.resource IN %(resource)s"
+    if filters.get("docstatus"):
+        # Map the string status to its corresponding docstatus integer
+        docstatus_value = status_map.get(filters["docstatus"], None)
+        if docstatus_value is not None:
+            filters["docstatus"] = docstatus_value  # Update the filter to use the integer value
+            conditions += " AND fe.docstatus = %(docstatus)s"
+    else:
+        # Optionally handle cases where no status is provided or an invalid status is provided
+        pass
+
     return conditions
+
+
