@@ -18,7 +18,7 @@ def get_columns():
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 110},
         {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 120},
         {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 120},
-        {"label": "Transaction ID", "fieldname": "transaction_id", "fieldtype": "Dynamic Link", "options": "dynamic_link", "width": 150}
+        {"label": "Transaction ID", "fieldname": "name", "fieldtype": "Link", "options": "Fuel Entry", "width": 180}
     ]
     return columns
 
@@ -29,12 +29,7 @@ def get_data(filters):
         SELECT
             fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
             fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed,
-            fe.previous_balance, fe.current_balance,
-            CASE
-                WHEN fe.utilization_type = 'Supplied' THEN fe.fuel_supplied_id
-                WHEN fe.utilization_type = 'Dispensed' THEN fe.fuel_utilization_id
-            END AS transaction_id,
-            'Fuel Used' AS dynamic_link
+            fe.previous_balance, fe.current_balance, fe.name
         FROM
             `tabFuel Entry` fe
         LEFT JOIN
@@ -43,7 +38,6 @@ def get_data(filters):
             {conditions}
         """, filters, as_dict=1)
     for row in data:
-        row["dynamic_link"] = "Fuel Used" if row["utilization_type"] == "Dispensed" else "Fuel Supplied"
         if row["litres_supplied"]:
             row["litres_supplied_style"] = "color: green;"
         if row["litres_dispensed"]:
