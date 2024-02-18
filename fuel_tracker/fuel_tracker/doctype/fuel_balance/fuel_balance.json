@@ -11,11 +11,6 @@
   "column_break_lzjq",
   "site",
   "fuel_tanker",
-  "fuel_used_type",
-  "reference_documents_section",
-  "fuel_used_id",
-  "column_break_ubmr",
-  "fuel_supplied_id",
   "amended_from"
  ],
  "fields": [
@@ -55,36 +50,6 @@
    "unique": 1
   },
   {
-   "allow_on_submit": 1,
-   "fieldname": "fuel_supplied_id",
-   "fieldtype": "Link",
-   "label": "Fuel Supplied ID",
-   "options": "Fuel Supplied"
-  },
-  {
-   "fieldname": "reference_documents_section",
-   "fieldtype": "Section Break",
-   "label": "Reference Documents"
-  },
-  {
-   "fieldname": "column_break_ubmr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "fuel_used_type",
-   "fieldtype": "Select",
-   "label": "Fuel Utilization Type",
-   "options": "\nSupplied\nDispensed"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "fuel_used_id",
-   "fieldtype": "Link",
-   "label": "Fuel Used ID",
-   "options": "Fuel Used"
-  },
-  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -98,7 +63,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 12:44:51.136141",
+ "modified": "2024-02-18 15:40:20.469517",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Balance",
