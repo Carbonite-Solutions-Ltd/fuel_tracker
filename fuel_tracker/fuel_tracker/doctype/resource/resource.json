@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "prompt",
  "creation": "2024-02-15 11:20:43.148141",
@@ -45,7 +46,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-15 11:59:35.519840",
+ "modified": "2024-02-19 15:49:37.664293",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",
