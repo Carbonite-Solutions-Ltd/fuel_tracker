@@ -7,8 +7,9 @@ frappe.query_reports["Fuel Balance"] = {
             "fieldname": "docstatus",
             "label": __("Status"),
             "fieldtype": "Select",
-            "options": ["Submitted", "Draft"], // Add options as per your doctype's status values
-            "default": "Submitted" // Optionally set a default status
+            "options": ["Submitted"], // Add options as per your doctype's status values
+            "default": "Submitted",// Optionally set a default status
+			"hidden": 1
         },
         {
             "fieldname": "from_date",

@@ -108,7 +108,7 @@
   {
    "fieldname": "fuel_utilization_id",
    "fieldtype": "Link",
-   "label": "Fuel Utilization ID",
+   "label": "Fuel Used ID",
    "options": "Fuel Used"
   },
   {
@@ -125,7 +125,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-18 15:41:22.499933",
+ "modified": "2024-02-19 08:49:07.182032",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",

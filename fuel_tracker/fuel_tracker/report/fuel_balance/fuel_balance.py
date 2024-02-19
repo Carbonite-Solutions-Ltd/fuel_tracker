@@ -12,8 +12,7 @@ def execute(filters=None):
 def get_columns():
     """Defines the columns for the report."""
     columns = [
-        {"label": _("Transaction ID"), "fieldname": "name", "fieldtype": "Link", "options": "Fuel Entry", "width": 180},
-        {"label": _("Date"), "fieldname": "date", "fieldtype": "Date", "width": 120},
+        {"label": _("AS @ Date"), "fieldname": "date", "fieldtype": "Date", "width": 120},
         {"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
         {"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
         {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 120},
@@ -26,7 +25,6 @@ def get_data(filters):
     conditions = get_conditions(filters)
     data = frappe.db.sql(f"""
         SELECT
-            fe.name,
             MAX(fe.date) as date,
             fe.site,
             fe.fuel_tanker,
@@ -42,11 +40,16 @@ def get_data(filters):
         ORDER BY
             MAX(fe.date)
     """, filters, as_dict=1)
+    for row in data:
+        if row["litres_supplied"]:
+            row["litres_supplied_style"] = "color: green;"
+        if row["litres_dispensed"]:
+            row["litres_dispensed_style"] = "color: red;"
     return data
 
 def get_conditions(filters):
     conditions = "1=1"
-    status_map = {"Draft": 0, "Submitted": 1}  # Map string values to integers
+    status_map = {"Submitted": 1}  # Map string values to integers
 
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"

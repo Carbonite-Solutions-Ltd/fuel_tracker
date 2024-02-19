@@ -11,8 +11,9 @@ frappe.query_reports["Fuel Ledger"] = {
             "fieldname": "docstatus",
             "label": __("Status"),
             "fieldtype": "Select",
-            "options": ["Submitted", "Cancelled", "Draft"], // Add options as per your doctype's status values
-            "default": "Submitted" // Optionally set a default status
+            "options": ["Submitted"], // Add options as per your doctype's status values
+            "default": "Submitted", // Optionally set a default status
+            "hidden": 1
         },
         
         {

@@ -44,7 +44,7 @@
   {
    "fieldname": "fuel_supplied",
    "fieldtype": "Float",
-   "label": "Fuel Supplied"
+   "label": "Fuel Supplied (LTS)"
   },
   {
    "fieldname": "amended_from",
@@ -60,7 +60,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 17:22:06.687851",
+ "modified": "2024-02-19 08:48:33.779848",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Supplied",
