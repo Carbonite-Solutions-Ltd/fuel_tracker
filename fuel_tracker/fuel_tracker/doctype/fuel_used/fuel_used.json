@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "allow_import": 1,
  "autoname": "FU-.#####",
  "creation": "2024-02-16 12:00:41.813808",
  "doctype": "DocType",
@@ -114,7 +114,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-16 17:20:03.149530",
+ "modified": "2024-02-19 14:28:59.692618",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",

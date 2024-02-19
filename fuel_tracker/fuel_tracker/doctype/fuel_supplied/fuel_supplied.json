@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "allow_import": 1,
  "autoname": "FSUP-.#####",
  "creation": "2024-02-14 17:55:37.588087",
  "doctype": "DocType",
@@ -60,7 +60,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-19 08:48:33.779848",
+ "modified": "2024-02-19 14:28:21.879025",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Supplied",
