@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"dbn201OYvb\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fuel Tracker</span>\",\"col\":12}},{\"id\":\"O-wgSmzmRg\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"9ifuVs7H43\",\"type\":\"card\",\"data\":{\"card_name\":\"Fuel Activity\",\"col\":4}}]",
+ "content": "[{\"id\":\"dbn201OYvb\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fuel Tracker</span>\",\"col\":12}},{\"id\":\"7RWIWQUmoe\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Fuel Supplied (Daily)\",\"col\":4}},{\"id\":\"xJABQZLix5\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Fuel Issued (Daily)\",\"col\":4}},{\"id\":\"i94_bxWlMe\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Fuel Balance (Daily)\",\"col\":4}},{\"id\":\"jdoJSQP4fQ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"O-wgSmzmRg\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"9ifuVs7H43\",\"type\":\"card\",\"data\":{\"card_name\":\"Fuel Activity\",\"col\":4}},{\"id\":\"GQrAKeG9V2\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2024-02-15 10:22:35.637318",
  "custom_blocks": [],
  "docstatus": 0,
@@ -88,13 +88,54 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 2,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Fuel Balance",
+   "link_count": 0,
+   "link_to": "Fuel Balance",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Fuel Ledger",
+   "link_count": 0,
+   "link_to": "Fuel Ledger",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2024-02-16 08:28:21.390594",
+ "modified": "2024-02-19 09:02:06.372119",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tracker",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total Fuel Supplied (Daily)",
+   "number_card_name": "Total Fuel Supplied (Daily)"
+  },
+  {
+   "label": "Total Fuel Issued (Daily)",
+   "number_card_name": "Total Fuel Issued (Daily)"
+  },
+  {
+   "label": "Total Fuel Balance (Daily)",
+   "number_card_name": "Total Fuel Balance (Daily)"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,

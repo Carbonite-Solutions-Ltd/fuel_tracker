@@ -47,7 +47,7 @@ def get_data(filters):
 def get_conditions(filters):
     """Returns SQL conditions based on filters."""
     conditions = "1=1"
-    status_map = {"Draft": 0, "Submitted": 1, "Cancelled": 2}  # Map string values to integers
+    status_map = {"Submitted": 1}  # Map string values to integers
 
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"

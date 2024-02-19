@@ -6,7 +6,32 @@ class FuelEntry(Document):
         self.update_fuel_balance(submit=True)
 
     def on_cancel(self):
+        self.cancel_linked_document()
         self.update_fuel_balance(submit=False)
+        
+    def cancel_linked_document(self):
+        """
+        Cancel the linked Fuel Supplied or Fuel Used document when the Fuel Entry is cancelled.
+        """
+        linked_docname = None
+        linked_doctype = None
+
+        if self.utilization_type == "Supplied" and self.fuel_supplied_id:
+            linked_docname = self.fuel_supplied_id
+            linked_doctype = "Fuel Supplied"
+        elif self.utilization_type == "Dispensed" and self.fuel_utilization_id:
+            linked_docname = self.fuel_utilization_id
+            linked_doctype = "Fuel Used"
+
+        if linked_docname and linked_doctype:
+            # Fetch the linked document
+            linked_doc = frappe.get_doc(linked_doctype, linked_docname)
+
+            # Cancel the linked document if it is not already cancelled
+            if linked_doc.docstatus == 1:  # 1 indicates submitted document
+                linked_doc.cancel()
+                frappe.db.commit()  # Ensure changes are committed to the database
+        
 
     def update_fuel_balance(self, submit=True):
         # Fetch the existing Fuel Balance for the specified fuel_tanker
