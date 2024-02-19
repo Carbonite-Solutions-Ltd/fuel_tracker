@@ -12,7 +12,7 @@ def execute(filters=None):
 def get_columns():
     """Defines the columns for the report."""
     columns = [
-        {"label": _("Date"), "fieldname": "date", "fieldtype": "Date", "width": 120},
+        {"label": _("AS @ Date"), "fieldname": "date", "fieldtype": "Date", "width": 120},
         {"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
         {"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
         {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 120},
