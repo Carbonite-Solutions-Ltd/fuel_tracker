@@ -122,14 +122,12 @@
 
 <script setup>
 
-import { reactive } from 'vue'
-import { ref, computed } from 'vue'
-import { FileUploader, Button, Dialog, Input, Autocomplete, Card, createListResource } from 'frappe-ui'
-import { createResource } from 'frappe-ui'
+
+import { ref, computed, reactive } from 'vue'
+import { Checkbox, Select, FeatherIcon, createResource, FileUploader, Button, Dialog, Input, Autocomplete, Card, createListResource } from 'frappe-ui'
 import { session } from '../data/session'
-import { Checkbox } from 'frappe-ui'
-import { Select } from 'frappe-ui'
-import { FeatherIcon } from 'frappe-ui'
+
+
 
 
 const actions = createListResource({
