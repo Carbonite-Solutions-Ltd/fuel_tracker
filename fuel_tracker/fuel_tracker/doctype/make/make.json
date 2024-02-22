@@ -6,7 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "make_name"
+  "make_name",
+  "type"
  ],
  "fields": [
   {
@@ -14,11 +15,16 @@
    "fieldtype": "Data",
    "label": "Name",
    "unique": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Data",
+   "label": "type"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-15 11:51:14.537837",
+ "modified": "2024-02-21 15:40:01.480981",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Make",

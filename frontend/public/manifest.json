@@ -1,0 +1,21 @@
+{
+    "name": "FuelTracker",
+    "short_name": "Fuel Tracker",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#000000",
+    "description": "Fuel Tracker App",
+    "icons": [
+      {
+        "src": "favicon.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "favicon.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ]
+  }
+  
