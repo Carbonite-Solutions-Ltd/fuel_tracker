@@ -29,6 +29,8 @@ import {
   FeatherIcon,
 } from 'frappe-ui'
 
+import './registerServiceWorker'
+
 let app = createApp(App)
 
 // Set Frappe UI configuration
