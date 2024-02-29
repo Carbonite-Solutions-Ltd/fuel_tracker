@@ -29,18 +29,14 @@ app.mount('#app')
 
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/assets/fuel_tracker/frontend/service-worker.js')
-    .then(function(registration) {
-      // Registration was successful
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }, function(err) {
-      // Registration failed
-      console.log('ServiceWorker registration failed: ', err);
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/frontend/service-worker.js').then(registration => {
+      console.log('SW registered: ', registration);
+    }).catch(registrationError => {
+      console.log('SW registration failed: ', registrationError);
     });
   });
 }
-
 
 // Assuming Dexie.js is included in your project
 export const db = new Dexie('FuelTrackerDB');
