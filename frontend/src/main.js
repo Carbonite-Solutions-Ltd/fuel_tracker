@@ -30,7 +30,7 @@ app.mount('#app')
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then(registration => {
+    navigator.serviceWorker.register('/frontend/src/service-worker.js').then(registration => {
       console.log('SW registered: ', registration);
     }).catch(registrationError => {
       console.log('SW registration failed: ', registrationError);
@@ -39,7 +39,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Assuming Dexie.js is included in your project
-export const db = new Dexie('FuelTrackerDB');
+const db = new Dexie("FuelTrackerDB");
 db.version(1).stores({
   fuelUsed: '++id, date, fuel_tanker, site, reg_no, resource_type, make, type, resource'
 });
