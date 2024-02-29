@@ -94,8 +94,8 @@
   
   <script>
   import { Autocomplete, TextInput } from 'frappe-ui';
-  import { saveFuelUsedOffline } from '/src/main.js';
-  import { db } from '/src/main.js';
+  import { saveFuelUsedOffline } from 'frontend/src/main.js';
+  import { db } from 'frontend/src/main.js';
 
     export default {
     components: {
