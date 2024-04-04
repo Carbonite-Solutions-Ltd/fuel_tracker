@@ -36,8 +36,8 @@ class FuelEntry(Document):
     def update_fuel_balance(self, submit=True):
         # Fetch the existing Fuel Balance for the specified fuel_tanker
         existing_balance = frappe.get_list("Fuel Balance",
-                                           filters={"fuel_tanker": self.fuel_tanker},
-                                           fields=["name", "balance"])
+                                        filters={"fuel_tanker": self.fuel_tanker},
+                                        fields=["name", "balance"])
 
         balance_entry = None
         if existing_balance:
@@ -55,19 +55,22 @@ class FuelEntry(Document):
             })
             balance_entry.insert()  # Insert new balance entry if creating for the first time
 
+        # Ensure 'litres_supplied' and 'litres_dispensed' are treated as floats
+        litres_supplied = float(self.litres_supplied) if self.litres_supplied not in (None, '') else 0.0
+        litres_dispensed = float(self.litres_dispensed) if self.litres_dispensed not in (None, '') else 0.0
+
         if submit:
             # Adjust the balance based on whether fuel was supplied or utilized
             if self.utilization_type == "Supplied":
-                balance_entry.balance += self.litres_supplied or 0
+                balance_entry.balance += litres_supplied
             elif self.utilization_type == "Dispensed":
-                balance_entry.balance -= self.litres_dispensed or 0
+                balance_entry.balance -= litres_dispensed
         else:
             # Reverse the balance adjustment if the document is being cancelled
             if self.utilization_type == "Supplied":
-                balance_entry.balance -= self.litres_supplied or 0
+                balance_entry.balance -= litres_supplied
             elif self.utilization_type == "Dispensed":
-                balance_entry.balance += self.litres_dispensed or 0
+                balance_entry.balance += litres_dispensed
 
         balance_entry.save()
-        # Check if it's draft and needs submitting; usually not needed for balance updates, so this might be optional
-        # frappe.db.commit() might not be necessary due to Frappe's transaction management
+        # No need for frappe.db.commit() as Frappe handles transactions automatically
