@@ -37,7 +37,7 @@ class FuelUsed(Document):
             "utilization_type": "Dispensed",
             "previous_balance": previous_balance,
             "litres_dispensed": self.fuel_issued_lts,  # Fuel issued (used) from this document
-            "current_balance": previous_balance - self.fuel_issued_lts,  # Subtract used fuel from previous balance
+            "current_balance": previous_balance - float(self.fuel_issued_lts),  # Subtract used fuel from previous balance
             "fuel_utilization_id": self.name,  # Link back to this Fuel Used document
         })
         fuel_entry.flags.ignore_permissions = True  # If necessary to bypass permission checks
