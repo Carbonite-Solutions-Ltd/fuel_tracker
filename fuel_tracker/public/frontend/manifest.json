@@ -1,0 +1,20 @@
+{
+    "name": "Fuel Tracker App",
+    "short_name": "FTA",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#000000",
+    "description": "Fuel Tacker app.",
+    "icons": [
+      {
+        "src": "logo192.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "logo512.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ]
+  }
