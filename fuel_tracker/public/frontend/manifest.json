@@ -1,9 +1,10 @@
 {
     "name": "Fuel Tracker App",
-    "short_name": "FTA",
+    "short_name": "Fuel Tracker App",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#000000",
+    "theme_color":"#009578",
     "description": "Fuel Tacker app.",
     "icons": [
       {
@@ -12,9 +13,11 @@
         "sizes": "192x192"
       },
       {
-        "src": "logo512.png",
+        "src": "bmw512.png",
         "type": "image/png",
         "sizes": "512x512"
       }
     ]
   }
+
+  
