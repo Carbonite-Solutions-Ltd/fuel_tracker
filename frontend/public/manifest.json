@@ -1,7 +1,7 @@
 {
     "name": "Fuel Tracker App",
     "short_name": "Fuel Tracker App",
-    "start_url": ".",
+    "start_url": "/frontend",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color":"#009578",
