@@ -1,7 +1,7 @@
 const CACHE_NAME = 'fuel-tracker-cache-v1';
 const urlsToCache = [
-  "./index.html",
-  "./manifest.json",
+  "/assets/fuel_tracker/frontend/index.html",
+  "/assets/fuel_tracker/frontend/manifest.json",
   "./logo512.png",
   "./logo192.png",
 ];
