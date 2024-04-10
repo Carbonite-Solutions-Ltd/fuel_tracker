@@ -1,11 +1,6 @@
 const CACHE_NAME = 'fuel-tracker-cache-v1';
 const urlsToCache = [
-  "./",
-//   "./src/pages/Home.vue",
-//   "./index.html",
-//   "./src/index.css",
-//   "./src/main.js"
-//   // Add other URLs you want to cache
+  "./logo512.png",
 ];
 
 // Install a service worker
