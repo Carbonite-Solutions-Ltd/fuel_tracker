@@ -1,4 +1,5 @@
 import './index.css'
+import '/sw.js'
 import Dexie from 'dexie';
 import { createApp } from 'vue'
 import router from './router'
