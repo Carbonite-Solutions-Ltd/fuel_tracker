@@ -1,8 +1,8 @@
 const CACHE_NAME = 'fuel-tracker-cache-v1';
 const urlsToCache = [
-  "/frontend",
-  "/frontend/index.html",
+  "./index.html",
   "./logo512.png",
+  "./logo192.png",
 ];
 
 // Install a service worker
