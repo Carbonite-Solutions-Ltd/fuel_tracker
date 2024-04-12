@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" cotent="#009578">
-    <title>Frappe UI App</title>
     <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frappe UI App</title>
 </head>
 <body>
     <div id="app"></div>
@@ -17,5 +16,18 @@
       window.csrf_token = '{{ frappe.session.csrf_token }}';
     </script>
     <script type="module" src="/src/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+              navigator.serviceWorker.register("/assets/fuel_tracker/frontend/sw.js").then(function(registration) {
+                  // Registration was successful
+                  console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              }, function(err) {
+                  // registration failed :(
+                  console.log('ServiceWorker registration failed: ', err);
+              });
+          });
+      }
+    </script>
 </body>
 </html>
