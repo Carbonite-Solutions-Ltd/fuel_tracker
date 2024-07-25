@@ -9,6 +9,8 @@
   "section_break_ma6e",
   "date",
   "site",
+  "supplier",
+  "reciever",
   "column_break_pwpl",
   "fuel_tanker",
   "fuel_supplied",
@@ -55,12 +57,22 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Data",
+   "label": "Supplier"
+  },
+  {
+   "fieldname": "reciever",
+   "fieldtype": "Data",
+   "label": "Reciever"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-19 14:28:21.879025",
+ "modified": "2024-07-25 14:38:31.451770",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Supplied",

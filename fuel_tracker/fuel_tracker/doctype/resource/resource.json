@@ -10,7 +10,11 @@
   "type",
   "make",
   "column_break_plxi",
-  "resource_type"
+  "resource_type",
+  "current_odometer",
+  "current_hours_copy",
+  "section_break_mjzu",
+  "descrption"
  ],
  "fields": [
   {
@@ -40,12 +44,34 @@
    "fieldname": "resource_type",
    "fieldtype": "Select",
    "label": "Resource Type",
-   "options": "\nTruck\nEquipment"
+   "options": "\nTruck\nEquipment\nOthers"
+  },
+  {
+   "depends_on": "eval:doc.resource_type == 'Truck';",
+   "fieldname": "current_odometer",
+   "fieldtype": "Float",
+   "label": "Current Odometer"
+  },
+  {
+   "depends_on": "eval:doc.resource_type=='Equipment';",
+   "fieldname": "current_hours_copy",
+   "fieldtype": "Float",
+   "label": "Current Hours"
+  },
+  {
+   "depends_on": "eval:doc.resource_type == 'Others';",
+   "fieldname": "descrption",
+   "fieldtype": "Small Text",
+   "label": "Descrption"
+  },
+  {
+   "fieldname": "section_break_mjzu",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-15 11:59:35.519840",
+ "modified": "2024-07-25 14:32:18.728862",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",

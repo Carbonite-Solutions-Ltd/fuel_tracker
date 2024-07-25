@@ -15,9 +15,11 @@
   "section_break_soib",
   "previous_balance",
   "current_balance",
+  "diff_odometer",
   "column_break_xyye",
   "litres_supplied",
   "litres_dispensed",
+  "diff_hours_copy",
   "refrence_documents_section",
   "fuel_utilization_id",
   "column_break_oszc",
@@ -119,12 +121,22 @@
    "fieldtype": "Link",
    "label": "Fuel Supplied ID",
    "options": "Fuel Supplied"
+  },
+  {
+   "fieldname": "diff_odometer",
+   "fieldtype": "Float",
+   "label": "Kilometers"
+  },
+  {
+   "fieldname": "diff_hours_copy",
+   "fieldtype": "Float",
+   "label": "Diff Hours"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-19 14:29:14.782229",
+ "modified": "2024-07-24 17:54:04.008400",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",
