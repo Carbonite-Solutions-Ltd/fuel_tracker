@@ -10,6 +10,7 @@
   "date",
   "resource",
   "resource_type",
+  "stationed_site",
   "column_break_pdgt",
   "fuel_tanker",
   "site",
@@ -139,12 +140,19 @@
    "fieldname": "requisition_number",
    "fieldtype": "Data",
    "label": "Requisition Number"
+  },
+  {
+   "fetch_from": "resource.stationed_site",
+   "fieldname": "stationed_site",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Stationed Site"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-25 14:30:02.117169",
+ "modified": "2024-07-25 17:49:01.498190",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",

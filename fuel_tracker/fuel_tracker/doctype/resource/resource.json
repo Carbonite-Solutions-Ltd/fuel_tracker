@@ -13,6 +13,7 @@
   "resource_type",
   "current_odometer",
   "current_hours_copy",
+  "stationed_site",
   "section_break_mjzu",
   "descrption"
  ],
@@ -67,11 +68,17 @@
   {
    "fieldname": "section_break_mjzu",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stationed_site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-25 14:32:18.728862",
+ "modified": "2024-07-25 17:44:59.300577",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",

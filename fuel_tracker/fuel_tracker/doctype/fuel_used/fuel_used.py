@@ -55,6 +55,7 @@ class FuelUsed(Document):
             "litres_dispensed": self.fuel_issued_lts,  # Fuel issued (used) from this document
             "current_balance": previous_balance - self.fuel_issued_lts,  # Subtract used fuel from previous balance
             "fuel_utilization_id": self.name,  # Link back to this Fuel Used document
+            "resource":self.resource
         }
 
         # Calculate the difference based on resource type

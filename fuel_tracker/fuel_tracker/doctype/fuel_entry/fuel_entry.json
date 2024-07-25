@@ -23,7 +23,12 @@
   "refrence_documents_section",
   "fuel_utilization_id",
   "column_break_oszc",
-  "fuel_supplied_id"
+  "fuel_supplied_id",
+  "section_break_zksg",
+  "resource",
+  "resource_type",
+  "column_break_fqww",
+  "resource_site"
  ],
  "fields": [
   {
@@ -123,20 +128,50 @@
    "options": "Fuel Supplied"
   },
   {
+   "depends_on": "eval:doc.resource_type == 'Truck'",
    "fieldname": "diff_odometer",
    "fieldtype": "Float",
    "label": "Kilometers"
   },
   {
+   "depends_on": "eval:doc.resource_type == 'Equipment'",
    "fieldname": "diff_hours_copy",
    "fieldtype": "Float",
    "label": "Diff Hours"
+  },
+  {
+   "fieldname": "section_break_zksg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "resource",
+   "fieldtype": "Link",
+   "label": "Resource",
+   "options": "Resource"
+  },
+  {
+   "fieldname": "column_break_fqww",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "resource.stationed_site",
+   "fieldname": "resource_site",
+   "fieldtype": "Link",
+   "label": "Resource Site",
+   "options": "Site"
+  },
+  {
+   "fetch_from": "resource.resource_type",
+   "fieldname": "resource_type",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Resource Type"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-24 17:54:04.008400",
+ "modified": "2024-07-25 18:17:08.783307",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",

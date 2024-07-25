@@ -18,6 +18,8 @@ def get_columns():
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 110},
         {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 120},
         {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 120},
+        {"label": "Kilometers", "fieldname": "diff_odometer", "fieldtype": "Float", "width": 120},
+        {"label": "Diff Hours", "fieldname": "diff_hours_copy", "fieldtype": "Float", "width": 120},
         {"label": "Transaction ID", "fieldname": "name", "fieldtype": "Link", "options": "Fuel Entry", "width": 180}
     ]
     return columns
@@ -29,7 +31,7 @@ def get_data(filters):
         SELECT
             fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
             fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed,
-            fe.previous_balance, fe.current_balance, fe.name
+            fe.previous_balance, fe.current_balance, fe.diff_odometer, fe.diff_hours_copy, fe.name
         FROM
             `tabFuel Entry` fe
         LEFT JOIN
