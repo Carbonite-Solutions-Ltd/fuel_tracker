@@ -8,7 +8,8 @@ class FuelEntry(Document):
     def on_cancel(self):
         self.cancel_linked_document()
         self.update_fuel_balance(submit=False)
-        
+        self.update_resource_usage_on_cancel()
+
     def cancel_linked_document(self):
         """
         Cancel the linked Fuel Supplied or Fuel Used document when the Fuel Entry is cancelled.
@@ -31,7 +32,6 @@ class FuelEntry(Document):
             if linked_doc.docstatus == 1:  # 1 indicates submitted document
                 linked_doc.cancel()
                 frappe.db.commit()  # Ensure changes are committed to the database
-        
 
     def update_fuel_balance(self, submit=True):
         # Fetch the existing Fuel Balance for the specified fuel_tanker
@@ -69,5 +69,27 @@ class FuelEntry(Document):
                 balance_entry.balance += self.litres_dispensed or 0
 
         balance_entry.save()
-        # Check if it's draft and needs submitting; usually not needed for balance updates, so this might be optional
-        # frappe.db.commit() might not be necessary due to Frappe's transaction management
+
+    def update_resource_usage_on_cancel(self):
+        """
+        Update the current_hours_copy or current_odometer of the resource when Fuel Entry is cancelled.
+        """
+        linked_docname = None
+
+        if self.utilization_type == "Dispensed" and self.fuel_utilization_id:
+            linked_docname = self.fuel_utilization_id
+
+        if linked_docname:
+            # Fetch the linked Fuel Used document
+            fuel_used_doc = frappe.get_doc("Fuel Used", linked_docname)
+
+            # Fetch the related resource
+            resource = frappe.get_doc("Resource", fuel_used_doc.resource)
+
+            # Update the appropriate field based on the resource type
+            if fuel_used_doc.resource_type == "Truck":
+                resource.current_odometer = fuel_used_doc.previous_odometer_km
+            elif fuel_used_doc.resource_type == "Equipment":
+                resource.current_hours_copy = fuel_used_doc.previous_hours_copy
+
+            resource.save()
