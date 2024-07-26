@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "tanker",
+  "tanker_threshold",
   "column_break_sdli",
   "site"
  ],
@@ -26,11 +27,16 @@
    "fieldtype": "Data",
    "label": "Tanker",
    "unique": 1
+  },
+  {
+   "fieldname": "tanker_threshold",
+   "fieldtype": "Float",
+   "label": "Tanker Threshold"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-15 10:47:49.049946",
+ "modified": "2024-07-25 14:28:28.745387",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tanker",

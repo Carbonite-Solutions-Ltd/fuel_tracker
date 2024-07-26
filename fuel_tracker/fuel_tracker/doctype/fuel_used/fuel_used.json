@@ -10,17 +10,22 @@
   "date",
   "resource",
   "resource_type",
+  "stationed_site",
   "column_break_pdgt",
   "fuel_tanker",
   "site",
   "amended_from",
   "section_break_obqz",
   "reg_no",
+  "previous_odometer_km",
   "odometer_km",
+  "previous_hours_copy",
+  "hours_copy",
   "fuel_issued_lts",
   "column_break_nynp",
   "make",
-  "type"
+  "type",
+  "requisition_number"
  ],
  "fields": [
   {
@@ -101,20 +106,53 @@
    "options": "Type"
   },
   {
+   "depends_on": "eval:doc.resource_type=='Truck';",
    "fieldname": "odometer_km",
    "fieldtype": "Float",
-   "label": "Odometer (KM)"
+   "label": "Current Odometer (KM)"
   },
   {
    "fieldname": "fuel_issued_lts",
    "fieldtype": "Float",
    "label": "Fuel Issued (LTS)"
+  },
+  {
+   "depends_on": "eval:doc.resource_type=='Truck';",
+   "fetch_from": "resource.current_odometer",
+   "fieldname": "previous_odometer_km",
+   "fieldtype": "Float",
+   "label": "Previous Odometer (KM)"
+  },
+  {
+   "depends_on": "eval:doc.resource_type=='Equipment';",
+   "fetch_from": "resource.current_hours_copy",
+   "fieldname": "previous_hours_copy",
+   "fieldtype": "Float",
+   "label": "Previous Hours"
+  },
+  {
+   "depends_on": "eval:doc.resource_type=='Equipment';",
+   "fieldname": "hours_copy",
+   "fieldtype": "Float",
+   "label": "Current Hours"
+  },
+  {
+   "fieldname": "requisition_number",
+   "fieldtype": "Data",
+   "label": "Requisition Number"
+  },
+  {
+   "fetch_from": "resource.stationed_site",
+   "fieldname": "stationed_site",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Stationed Site"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-19 14:28:59.692618",
+ "modified": "2024-07-25 17:49:01.498190",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",
