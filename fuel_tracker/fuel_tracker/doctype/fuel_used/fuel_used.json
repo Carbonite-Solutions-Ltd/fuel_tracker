@@ -25,6 +25,7 @@
   "column_break_nynp",
   "make",
   "type",
+  "model",
   "requisition_number"
  ],
  "fields": [
@@ -52,14 +53,16 @@
    "fetch_from": "resource.resource_type",
    "fieldname": "resource_type",
    "fieldtype": "Data",
-   "label": "Resource Type"
+   "label": "Resource Type",
+   "read_only": 1
   },
   {
    "fetch_from": "fuel_tanker.site",
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "reqd": 1
   },
   {
    "fieldname": "date",
@@ -74,8 +77,10 @@
    "fetch_from": ".",
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Fuel Tanker",
-   "options": "Fuel Tanker"
+   "options": "Fuel Tanker",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_obqz",
@@ -85,7 +90,8 @@
    "fetch_from": "resource.reg_no",
    "fieldname": "reg_no",
    "fieldtype": "Data",
-   "label": "Reg. No"
+   "label": "Reg. No",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_nynp",
@@ -96,14 +102,16 @@
    "fieldname": "make",
    "fieldtype": "Link",
    "label": "Make",
-   "options": "Make"
+   "options": "Make",
+   "read_only": 1
   },
   {
    "fetch_from": "resource.type",
    "fieldname": "type",
    "fieldtype": "Link",
    "label": "Type",
-   "options": "Type"
+   "options": "Type",
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.resource_type=='Truck';",
@@ -121,7 +129,8 @@
    "fetch_from": "resource.current_odometer",
    "fieldname": "previous_odometer_km",
    "fieldtype": "Float",
-   "label": "Previous Odometer (KM)"
+   "label": "Previous Odometer (KM)",
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.resource_type=='Equipment';",
@@ -147,12 +156,19 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Stationed Site"
+  },
+  {
+   "fetch_from": "resource.model",
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-26 14:34:12.191650",
+ "modified": "2024-07-30 16:06:38.044110",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",

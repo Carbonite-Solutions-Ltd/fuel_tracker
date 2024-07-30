@@ -1,14 +1,16 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "prompt",
+ "autoname": "field:chassis_number",
  "creation": "2024-02-15 11:20:43.148141",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "chassis_number",
   "reg_no",
   "type",
   "make",
+  "model",
   "column_break_plxi",
   "resource_type",
   "current_odometer",
@@ -74,15 +76,27 @@
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Link",
+   "label": "Model",
+   "options": "FT Model"
+  },
+  {
+   "fieldname": "chassis_number",
+   "fieldtype": "Data",
+   "label": "Chassis Number",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-25 17:44:59.300577",
+ "modified": "2024-07-30 15:46:47.941691",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",
- "naming_rule": "Set by user",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
