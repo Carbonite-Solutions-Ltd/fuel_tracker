@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-31 11:03:09.131100",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "section_break_mwwp",
+  "current_site",
+  "column_break_rlzs",
+  "new_site",
+  "section_break_boru",
+  "current_resource_list",
+  "column_break_vegy",
+  "new_resource_list"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_rlzs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_site",
+   "fieldtype": "Link",
+   "label": "New Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "current_site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "section_break_boru",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "current_resource_list",
+   "fieldtype": "Table",
+   "label": "Resource List",
+   "options": "Resource Table"
+  },
+  {
+   "fieldname": "column_break_vegy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_resource_list",
+   "fieldtype": "Table",
+   "label": "Resource List",
+   "options": "Resource Table"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "section_break_mwwp",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-07-31 17:08:34.246458",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Resource Movement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

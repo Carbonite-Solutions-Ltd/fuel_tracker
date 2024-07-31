@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-31 13:14:02.547906",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "old_site",
+  "new_site",
+  "resource",
+  "date"
+ ],
+ "fields": [
+  {
+   "fieldname": "old_site",
+   "fieldtype": "Link",
+   "label": "Old Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "new_site",
+   "fieldtype": "Link",
+   "label": "New Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "resource",
+   "fieldtype": "Link",
+   "label": "Resource",
+   "options": "Item"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-07-31 16:57:41.072990",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Resource Movement Ledger",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
