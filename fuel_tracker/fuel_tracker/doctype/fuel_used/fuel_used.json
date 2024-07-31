@@ -47,6 +47,7 @@
    "fieldname": "resource",
    "fieldtype": "Link",
    "label": "Resource",
+   "link_filters": "[[\"Item\",\"custom_resource_type\",\"is\",\"set\"],[\"Item\",\"is_fixed_asset\",\"=\",1]]",
    "options": "Item",
    "reqd": 1
   },
@@ -170,7 +171,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-30 17:25:01.453495",
+ "modified": "2024-07-31 17:46:30.406513",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",
