@@ -147,21 +147,21 @@
    "fieldname": "resource",
    "fieldtype": "Link",
    "label": "Resource",
-   "options": "Resource"
+   "options": "Item"
   },
   {
    "fieldname": "column_break_fqww",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "resource.stationed_site",
+   "fetch_from": "resource.custom_stationed_site",
    "fieldname": "resource_site",
    "fieldtype": "Link",
    "label": "Resource Site",
    "options": "Site"
   },
   {
-   "fetch_from": "resource.resource_type",
+   "fetch_from": "resource.custom_resource_type",
    "fieldname": "resource_type",
    "fieldtype": "Data",
    "hidden": 1,
@@ -171,7 +171,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-25 18:17:08.783307",
+ "modified": "2024-07-31 09:41:09.590098",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",
