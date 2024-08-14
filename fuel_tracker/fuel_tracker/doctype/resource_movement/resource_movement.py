@@ -6,22 +6,32 @@ class ResourceMovement(Document):
 
 @frappe.whitelist()
 def populate_current_resources(current_site):
-    items = frappe.get_list("Item", filters={"custom_stationed_site": current_site}, fields=["name as resource"])
+    items = frappe.get_list("Item", 
+                            filters={"custom_stationed_site": current_site}, 
+                            fields=["name as resource", "custom_type", "custom_make", "custom_reg_no"])
     return items
 
 @frappe.whitelist()
 def populate_new_resources(new_site):
-    items = frappe.get_list("Item", filters={"custom_stationed_site": new_site}, fields=["name as resource"])
+    items = frappe.get_list("Item", 
+                            filters={"custom_stationed_site": new_site}, 
+                            fields=["name as resource", "custom_type", "custom_make", "custom_reg_no"])
     return items
+
 
 @frappe.whitelist()
 def move_resources(doc):
     doc = frappe.get_doc(frappe.parse_json(doc))
+    
     if not doc.new_site:
         frappe.throw("Please select a new site to move the resources to.")
 
     # Check for the implicit selection using `__checked` attribute
     selected_items = [d.resource for d in doc.current_resource_list if d.get('__checked')]
+    
+    if not selected_items:
+        frappe.throw("Please select at least one resource to move.")
+    
     movement_date = doc.get("date") or frappe.utils.nowdate()  # Use provided date or current date
 
     for item_name in selected_items:

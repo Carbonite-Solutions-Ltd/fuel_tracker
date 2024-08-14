@@ -4,6 +4,15 @@ frappe.ui.form.on("Resource Movement", {
         frm.add_custom_button(__('Move'), function () {
             frm.trigger("move_resources");
         }).addClass('btn-primary');
+
+        // Add a query filter to the "new_site" field
+        frm.fields_dict.new_site.get_query = function(doc) {
+            return {
+                filters: {
+                    "name": ["!=", doc.current_site] // Exclude the selected "current_site"
+                }
+            };
+        };
     },
 
     move_resources: function(frm) {
@@ -32,6 +41,9 @@ frappe.ui.form.on("Resource Movement", {
                     $.each(r.message, function(_i, d) {
                         let row = frm.add_child("current_resource_list");
                         row.resource = d.resource;
+                        row.type = d.custom_type;  // Added type
+                        row.make = d.custom_make;  // Added make
+                        row.registration = d.custom_reg_no;  // Added registration number
                     });
                     frm.refresh_field("current_resource_list");
                 }
@@ -48,6 +60,9 @@ frappe.ui.form.on("Resource Movement", {
                     $.each(r.message, function(_i, d) {
                         let row = frm.add_child("new_resource_list");
                         row.resource = d.resource;
+                        row.type = d.custom_type;  // Added type
+                        row.make = d.custom_make;  // Added make
+                        row.registration = d.custom_reg_no;  // Added registration number
                     });
                     frm.refresh_field("new_resource_list");
                 }
@@ -66,6 +81,9 @@ frappe.ui.form.on("Resource Movement", {
                     $.each(r.message, function(_i, d) {
                         let row = frm.add_child("current_resource_list");
                         row.resource = d.resource;
+                        row.type = d.custom_type;  // Added type
+                        row.make = d.custom_make;  // Added make
+                        row.registration = d.custom_reg_no;  // Added registration number
                     });
                     frm.refresh_field("current_resource_list");
                 }
@@ -84,6 +102,9 @@ frappe.ui.form.on("Resource Movement", {
                     $.each(r.message, function(_i, d) {
                         let row = frm.add_child("new_resource_list");
                         row.resource = d.resource;
+                        row.type = d.custom_type;  // Added type
+                        row.make = d.custom_make;  // Added make
+                        row.registration = d.custom_reg_no;  // Added registration number
                     });
                     frm.refresh_field("new_resource_list");
                 }

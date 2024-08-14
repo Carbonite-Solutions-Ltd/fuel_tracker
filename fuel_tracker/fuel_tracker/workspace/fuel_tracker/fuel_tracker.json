@@ -54,8 +54,37 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 2,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Fuel Balance",
+   "link_count": 0,
+   "link_to": "Fuel Balance",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Fuel Ledger",
+   "link_count": 0,
+   "link_to": "Fuel Ledger",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Fuel Activity",
-   "link_count": 3,
+   "link_count": 4,
+   "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
   },
@@ -92,33 +121,15 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Reports",
-   "link_count": 2,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 1,
-   "label": "Fuel Balance",
+   "label": "Resource Movement",
    "link_count": 0,
-   "link_to": "Fuel Balance",
-   "link_type": "Report",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 1,
-   "label": "Fuel Ledger",
-   "link_count": 0,
-   "link_to": "Fuel Ledger",
-   "link_type": "Report",
+   "link_to": "Resource Movement",
+   "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2024-02-19 09:02:06.372119",
+ "modified": "2024-08-14 13:59:05.404202",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tracker",

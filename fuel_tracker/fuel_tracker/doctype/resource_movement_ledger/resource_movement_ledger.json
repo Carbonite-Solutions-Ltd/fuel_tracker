@@ -5,10 +5,13 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "date",
   "old_site",
   "new_site",
+  "column_break_aids",
   "resource",
-  "date"
+  "type",
+  "make"
  ],
  "fields": [
   {
@@ -33,11 +36,27 @@
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date"
+  },
+  {
+   "fieldname": "column_break_aids",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "resource.custom_type",
+   "fieldname": "type",
+   "fieldtype": "Data",
+   "label": "Type"
+  },
+  {
+   "fetch_from": "resource.custom_make",
+   "fieldname": "make",
+   "fieldtype": "Data",
+   "label": "Make"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-31 16:57:41.072990",
+ "modified": "2024-08-14 12:34:53.989435",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource Movement Ledger",
