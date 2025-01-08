@@ -122,13 +122,21 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Doctype1": {
+        "on_update": "fuel_tracker.api.login.verify_login"
+    },
+    "Doctype2": {
+        "on_update": "fuel_tracker.api.fuel_used.fuel_used"
+    },
+    "Doctype3": {
+        "on_update": "fuel_tracker.api.fuel_used.get_fuel_tankers"
+    },
+    "Doctype4": {
+        "on_update": "fuel_tracker.api.fuel_used.get_filtered_items",
+        "on_update": "fuel_tracker.api.fuel_used.get_site"
+    },
+}
 
 # Scheduled Tasks
 # ---------------
