@@ -133,8 +133,19 @@ doc_events = {
         "on_update": "fuel_tracker.api.fuel_used.get_fuel_tankers"
     },
     "Doctype4": {
-        "on_update": "fuel_tracker.api.fuel_used.get_filtered_items",
+        "on_update": "fuel_tracker.api.fuel_used.get_filtered_items"
+    },
+    "Doctype5": {
+        "on update": "fuel_tracker.api.fuel_used.delete_fuel_used_document"
+    },
+    "Doctype6": {
         "on_update": "fuel_tracker.api.fuel_used.get_site"
+    },
+    "Doctype7": {
+        "on_update": "fuel_tracker.api.fuel_used.fuel_list"
+    },
+    "Doctype8": {
+        "on_update": "fuel_tracker.api.fuel_used.get_all_fuel_used_records"
     },
 }
 
