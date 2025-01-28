@@ -26,7 +26,9 @@
   "make",
   "type",
   "model",
-  "requisition_number"
+  "requisition_number",
+  "mobile_tab",
+  "review_status"
  ],
  "fields": [
   {
@@ -166,12 +168,24 @@
    "fieldtype": "Data",
    "label": "Model",
    "read_only": 1
+  },
+  {
+   "fieldname": "mobile_tab",
+   "fieldtype": "Tab Break",
+   "label": "Mobile"
+  },
+  {
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Review Status",
+   "options": "\nIncoming Report\nReviewed"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-31 17:46:30.406513",
+ "modified": "2025-01-28 09:24:10.623765",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",
@@ -197,5 +211,10 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Green",
+   "title": "Reviewed"
+  }
+ ]
 }
