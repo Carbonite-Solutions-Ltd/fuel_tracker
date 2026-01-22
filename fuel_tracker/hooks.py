@@ -147,6 +147,9 @@ doc_events = {
     "Doctype8": {
         "on_update": "fuel_tracker.api.fuel_used.get_all_fuel_used_records"
     },
+    "Doctype9": {
+        "on_update": "fuel_tracker.api.dashboard.fuelBalance"
+    },
 }
 
 # Scheduled Tasks
