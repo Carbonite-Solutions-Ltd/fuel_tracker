@@ -24,19 +24,21 @@
   },
   {
    "fieldname": "tanker",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Tanker",
+   "link_filters": "[[\"Item\",\"custom_resource_type\",\"is\",\"set\"]]",
+   "options": "Item",
    "unique": 1
   },
   {
    "fieldname": "tanker_threshold",
    "fieldtype": "Float",
-   "label": "Tanker Threshold"
+   "label": "Tanker Maximum Threshold"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-25 14:28:28.745387",
+ "modified": "2026-01-22 12:26:06.636980",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Tanker",
@@ -56,6 +58,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

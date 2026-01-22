@@ -61,18 +61,18 @@
   {
    "fieldname": "supplier",
    "fieldtype": "Data",
-   "label": "Supplier"
+   "label": "Discharging Tanker"
   },
   {
    "fieldname": "reciever",
    "fieldtype": "Data",
-   "label": "Reciever"
+   "label": "Receiving Official"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-25 14:38:31.451770",
+ "modified": "2026-01-22 12:22:19.428854",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Supplied",
@@ -93,6 +93,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
