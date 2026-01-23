@@ -28,6 +28,7 @@ def fuel_used():
             "resource": data.get("resource"),
             "site": data.get("site"),
             "fuel_issued_lts": float(data.get("fuel_used", 0)),  # Update fieldname here
+            "odometer_km": data.get("odometer_km"),
             "requisition_number": data.get("requisition_number"),
             "review_status":"Incoming Report"
         })
