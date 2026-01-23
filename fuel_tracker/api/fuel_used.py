@@ -134,7 +134,7 @@ def get_filtered_items():
         items = frappe.get_list(
             "Item",
             filters=filters,
-            fields=["name", "item_code", "item_name", "custom_resource_type", "is_fixed_asset"]
+            fields=["name", "item_code", "item_name", "custom_resource_type", "is_fixed_asset", "custom_current_odometer"]
         )
 
         # Return the filtered items
