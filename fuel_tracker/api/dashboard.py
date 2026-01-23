@@ -1,6 +1,6 @@
 import frappe 
 
-frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)
 def fuelBalance(site, fuel_tanker):
     try:
         from datetime import datetime
