@@ -17,8 +17,18 @@ def verify_login(username, password):
         if user_doc and frappe.utils.password.check_password(user_doc.name, password):
             # Fetch API key and secret for the user
             api_key = user_doc.api_key
-            api_secret = user_doc.get_password('api_secret')
-            
+            api_secret = user_doc.get_password('api_secret') if user_doc.api_secret else None
+
+            # Generate API key and secret if they don't exist
+            if not api_key or not api_secret:
+                api_key = frappe.generate_hash(length=15)
+                api_secret = frappe.generate_hash(length=15)
+
+                user_doc.api_key = api_key
+                user_doc.api_secret = api_secret
+                user_doc.save(ignore_permissions=True)
+                frappe.db.commit()
+
             # If the credentials are valid, return success with full name, api_key, and api_secret
             return {
                 "status": "success",

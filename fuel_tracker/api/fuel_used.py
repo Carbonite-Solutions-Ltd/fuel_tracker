@@ -2,9 +2,8 @@ import frappe
 from frappe import _
 
 
-
 # ? Function To Create a new document in Fuel Used
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def fuel_used():
     """
     Create a new document in the "Fuel Used" doctype with the provided data.
@@ -51,7 +50,7 @@ def fuel_used():
 
   
 # ? Function to delete document based on document name
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_fuel_used_document():
     """
     Delete a document in the "Fuel Used" doctype based on the provided document name (ID).
@@ -94,8 +93,8 @@ def delete_fuel_used_document():
 
 
 # ? Function to get the list of fuel tanker
-@frappe.whitelist(allow_guest=True)
-def get_fuel_tankers():
+@frappe.whitelist()
+def get_fuel_tankers(allow):
     """
     Fetch a list of all documents in the "Fuel Tanker" doctype and return the "tanker" field.
     """
@@ -117,7 +116,7 @@ def get_fuel_tankers():
 
 
 # ? Function To get THe Fixex Asset Truck From The List
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_filtered_items():
     """
     Fetch a list of items from the "Items" doctype with specific filters:
@@ -150,9 +149,8 @@ def get_filtered_items():
 
 
 
-
 # ? Function to get the list of fuel tanker
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_site():
     """
     Fetch a list of Sites in the "Fuel Tanker" doctype.
@@ -172,6 +170,102 @@ def get_site():
         frappe.throw(_("An error occurred while fetching the Fuel Sites: {0}").format(str(e)))
 
 
+#  ? Function to get a specific Fuel Used document by name
+@frappe.whitelist()
+def get_fuel_used_document(docname):
+    """
+    Fetch a specific Fuel Used document by its name/ID.
+    
+    Args:
+        docname (str): The name/ID of the Fuel Used document to fetch
+    
+    Returns:
+        dict: The document data or error message
+    """
+    try:
+        if not docname:
+            frappe.throw(_("Document name is required"))
+        
+        # Get the document with all fields
+        doc = frappe.get_doc("Fuel Used", docname)
+        
+        return {
+            "status": "success",
+            "data": doc.as_dict()
+        }
+    except Exception as e:
+        frappe.log_error(message=str(e), title="Get Fuel Used Document Error")
+        frappe.throw(_("An error occurred while fetching the Fuel Used document: {0}").format(str(e)))
+
+
+#  ? Function to get all Fuel Used documents created by the authenticated user
+@frappe.whitelist()
+def get_user_fuel_used_documents():
+    """
+    Fetch all Fuel Used documents created by the authenticated user.
+    
+    Returns:
+        dict: List of documents created by the current user or error message
+    """
+    try:
+        # Get the current user
+        current_user = frappe.session.user
+        
+        # Fetch all Fuel Used documents created by the current user
+        documents = frappe.get_all("Fuel Used", 
+            filters={"owner": current_user},
+            fields=["name", "creation", "modified", "owner", "docstatus", "site", "fuel_tanker"],
+            order_by="creation desc"
+        )
+        
+        return {
+            "status": "success",
+            "data": documents,
+            "user": current_user
+        }
+    except Exception as e:
+        frappe.log_error(message=str(e), title="Get User Fuel Used Documents Error")
+        frappe.throw(_("An error occurred while fetching user's Fuel Used documents: {0}").format(str(e)))
+
+
+#  ? Function to get total fuel dispensed by user today
+@frappe.whitelist()
+def user_dispensed_today():
+    """
+    Calculate total fuel dispensed by the authenticated user for the current date.
+    
+    Returns:
+        dict: Total fuel dispensed today by the current user or error message
+    """
+    try:
+        from datetime import datetime
+        
+        # Get the current user and date
+        current_user = frappe.session.user
+        current_date = datetime.now().date()
+        
+        # Fetch all Fuel Used documents created by the current user for today
+        documents = frappe.get_all("Fuel Used", 
+            filters={
+                "owner": current_user,
+                "date": current_date
+            },
+            fields=["fuel_issued_lts"]
+        )
+        
+        # Sum up the fuel_issued_lts field
+        total_dispensed = sum(doc.fuel_issued_lts or 0 for doc in documents)
+        
+        return {
+            "status": "success",
+            "total_dispensed_today": total_dispensed,
+            "user": current_user,
+            "date": str(current_date),
+            "document_count": len(documents)
+        }
+    except Exception as e:
+        frappe.log_error(message=str(e), title="User Dispensed Today Error")
+        frappe.throw(_("An error occurred while calculating today's fuel dispensed: {0}").format(str(e)))
 
 
 #  ? Function to get list of Fuel Used
