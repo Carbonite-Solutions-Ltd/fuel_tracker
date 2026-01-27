@@ -94,7 +94,7 @@ def delete_fuel_used_document():
 
 # ? Function to get the list of fuel tanker
 @frappe.whitelist()
-def get_fuel_tankers(allow):
+def get_fuel_tankers():
     """
     Fetch a list of all documents in the "Fuel Tanker" doctype and return the "tanker" field.
     """
@@ -310,3 +310,6 @@ def get_all_fuel_used_records():
 # http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.get_site
 # http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.fuel_list
 # http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.get_all_fuel_used_records
+# http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.user_dispensed_today
+# http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.get_fuel_used_document
+# http://127.0.0.1:8000/api/v2/method/fuel_tracker.api.fuel_used.get_user_fuel_used_documents
