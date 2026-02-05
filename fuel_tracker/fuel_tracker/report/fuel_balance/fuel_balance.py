@@ -12,12 +12,12 @@ def execute(filters=None):
 def get_columns():
     """Defines the columns for the report."""
     columns = [
-        {"label": _("AS @ Date"), "fieldname": "date", "fieldtype": "Date", "width": 120},
-        {"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
-        {"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
-        {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 120},
-        {"label": _("Liters Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 120},
-        {"label": _("Current Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 120},
+        {"label": _("AS @ Date"), "fieldname": "date", "fieldtype": "Date", "width": 200},
+        {"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 220},
+        {"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 200},
+        {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 200},
+        {"label": _("Liters Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 200},
+        {"label": _("Current Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 200},
     ]
     return columns
 
@@ -51,10 +51,8 @@ def get_conditions(filters):
     conditions = "1=1"
     status_map = {"Submitted": 1}  # Map string values to integers
 
-    if filters.get("from_date"):
-        conditions += " AND fe.date >= %(from_date)s"
-    if filters.get("to_date"):
-        conditions += " AND fe.date <= %(to_date)s"
+    if filters.get("date"):
+        conditions += " AND fe.date <= %(date)s"
     if filters.get("fuel_tanker"):
         conditions += " AND fe.fuel_tanker IN %(fuel_tanker)s"
     if filters.get("site"):

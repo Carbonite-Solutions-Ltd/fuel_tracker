@@ -3,27 +3,51 @@ import frappe
 def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
+
+    # Add total row
+    if data:
+        total_row = {
+            "date": None,
+            "site": "Total",
+            "utilization_type": None,
+            "fuel_tanker": None,
+            "resource_type": None,
+            "resource": None,
+            "litres_supplied": sum(row.get("litres_supplied") or 0 for row in data),
+            "litres_dispensed": sum(row.get("litres_dispensed") or 0 for row in data),
+            "previous_balance": None,
+            "current_balance": None,
+            "previous_odometer_km": None,
+            "odometer_km": None,
+            "diff_odometer": sum(row.get("diff_odometer") or 0 for row in data),
+            "previous_hours_copy": None,
+            "hours_copy": None,
+            "diff_hours_copy": sum(row.get("diff_hours_copy") or 0 for row in data),
+            "name": None
+        }
+        data.append(total_row)
+
     return columns, data
 
 def get_columns():
     """Returns the columns for the report."""
     columns = [
-        {"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 100},
-        {"label": "Site", "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 100},
-        {"label": "Utilization Type", "fieldname": "utilization_type", "fieldtype": "Data", "width": 120},
-        {"label": "Fuel Tanker", "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 100},
-        {"label": "Resource Type", "fieldname": "resource_type", "fieldtype": "Data", "width": 120},
-        {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 100},
-        {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "width": 100},
-        {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 110},
-        {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 120},
-        {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 120},
-        {"label": "Previous Odometer", "fieldname": "previous_odometer_km", "fieldtype": "Float", "width": 120},
-        {"label": "Current Odometer", "fieldname": "odometer_km", "fieldtype": "Float", "width": 120},
-        {"label": "Kilometers", "fieldname": "diff_odometer", "fieldtype": "Float", "width": 120},
-        {"label": "Previous Hours", "fieldname": "previous_hours_copy", "fieldtype": "Float", "width": 120},
-        {"label": "Current Hours", "fieldname": "hours_copy", "fieldtype": "Float", "width": 120},
-        {"label": "Diff Hours", "fieldname": "diff_hours_copy", "fieldtype": "Float", "width": 120},
+        {"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 150},
+        {"label": "Site", "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
+        {"label": "Utilization Type", "fieldname": "utilization_type", "fieldtype": "Data", "width": 150},
+        {"label": "Fuel Tanker", "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
+        {"label": "Resource Type", "fieldname": "resource_type", "fieldtype": "Data", "width": 150},
+        {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 150},
+        {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "width": 150},
+        {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 150},
+        {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 150},
+        {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 150},
+        {"label": "Previous Odometer", "fieldname": "previous_odometer_km", "fieldtype": "Float", "width": 150},
+        {"label": "Current Odometer", "fieldname": "odometer_km", "fieldtype": "Float", "width": 150},
+        {"label": "Kilometers", "fieldname": "diff_odometer", "fieldtype": "Float", "width": 150},
+        {"label": "Previous Hours", "fieldname": "previous_hours_copy", "fieldtype": "Float", "width": 150},
+        {"label": "Current Hours", "fieldname": "hours_copy", "fieldtype": "Float", "width": 150},
+        {"label": "Diff Hours", "fieldname": "diff_hours_copy", "fieldtype": "Float", "width": 150},
         {"label": "Transaction ID", "fieldname": "name", "fieldtype": "Link", "options": "Fuel Entry", "width": 180}
     ]
     return columns

@@ -2,6 +2,10 @@ import frappe
 from frappe.model.document import Document
 
 class FuelUsed(Document):
+    def before_submit(self):
+        if self.review_status == "Incoming Report":
+            self.review_status = "Reviewed"
+
     def on_submit(self):
         # Perform validation based on resource type
         self.validate_resource_usage()
@@ -16,7 +20,7 @@ class FuelUsed(Document):
         self.update_resource_usage()
 
     def validate_resource_usage(self):
-        resource = frappe.get_doc("Item", self.resource)
+        resource = frappe.get_doc("Resource", self.resource)
         
         if self.resource_type == "Truck":
             if self.odometer_km < self.previous_odometer_km:
@@ -70,13 +74,13 @@ class FuelUsed(Document):
         fuel_entry.submit()
 
     def update_resource_usage(self):
-        resource = frappe.get_doc("Item", self.resource)
-        
+        resource = frappe.get_doc("Resource", self.resource)
+
         if self.resource_type == "Truck":
-            resource.custom_current_odometer = self.odometer_km
+            resource.current_odometer = self.odometer_km
         elif self.resource_type == "Equipment":
-            resource.custom_current_hours_copy = self.hours_copy
-        
+            resource.current_hours = self.hours_copy
+
         resource.save()
         
 
