@@ -12,18 +12,12 @@ frappe.query_reports["Fuel Balance"] = {
 			"hidden": 1
         },
         {
-            "fieldname": "from_date",
-            "label": __("From Date"),
+            "fieldname": "date",
+            "label": __("As At Date"),
             "fieldtype": "Date",
-            "default": frappe.datetime.month_start(),
-            "width": "80"
-        },
-        {
-            "fieldname": "to_date",
-            "label": __("To Date"),
-            "fieldtype": "Date",
-            "default": frappe.datetime.month_end(),
-            "width": "80"
+            "default": frappe.datetime.get_today(),
+            "width": "80",
+            "reqd": 1
         },
         {
             "fieldname": "fuel_tanker",

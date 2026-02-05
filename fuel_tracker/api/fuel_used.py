@@ -28,6 +28,7 @@ def fuel_used():
             "site": data.get("site"),
             "fuel_issued_lts": float(data.get("fuel_used", 0)),  # Update fieldname here
             "odometer_km": data.get("odometer_km"),
+            "hours_copy": data.get("hours_copy"), 
             "requisition_number": data.get("requisition_number"),
             "review_status":"Incoming Report"
         })
@@ -115,37 +116,28 @@ def get_fuel_tankers():
 
 
 
-# ? Function To get THe Fixex Asset Truck From The List
-@frappe.whitelist()
+# ? Function To get the Resources list
+@frappe.whitelist(allow_guest=True)
 def get_filtered_items():
     """
-    Fetch a list of items from the "Items" doctype with specific filters:
-    - custom_resource_type is set (not null or empty)
-    - is_fixed_asset is 1 (true)
+    Fetch a list of resources from the "Resource" doctype.
     """
     try:
-        # Define the filters
-        filters = [
-            ["Item", "custom_resource_type", "is", "set"],
-            ["Item", "is_fixed_asset", "=", 1]
-        ]
-
-        # Fetch filtered items
-        items = frappe.get_list(
-            "Item",
-            filters=filters,
-            fields=["name", "item_code", "item_name", "custom_resource_type", "is_fixed_asset", "custom_current_odometer"]
+        # Fetch resources
+        resources = frappe.get_list(
+            "Resource",
+            fields=["name", "reg_no", "resource_type", "current_odometer", "current_hours"]
         )
 
-        # Return the filtered items
+        # Return the resources
         return {
             "status": "success",
-            "data": items,
+            "data": resources,
         }
     except Exception as e:
         # Log the error and return a failure response
-        frappe.log_error(message=str(e), title="Get Filtered Items API Error")
-        frappe.throw(_("An error occurred while fetching the filtered items: {0}").format(str(e)))
+        frappe.log_error(message=str(e), title="Get Resources API Error")
+        frappe.throw(_("An error occurred while fetching the resources: {0}").format(str(e)))
 
 
 
