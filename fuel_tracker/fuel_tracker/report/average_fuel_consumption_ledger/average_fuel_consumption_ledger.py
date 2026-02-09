@@ -62,7 +62,7 @@ def get_columns():
             "fieldname": "diff_hours",
             "label": _("Difference in Hours"),
             "fieldtype": "Float",
-            "width": 150
+            "width": 200
         },
         {
             "fieldname": "kilometers",
@@ -72,9 +72,9 @@ def get_columns():
         },
         {
             "fieldname": "litres_dispensed",
-            "label": _("Litres Dispensed"),
+            "label": _("Previous Litres Dispensed"),
             "fieldtype": "Float",
-            "width": 150
+            "width": 200
         },
         {
             "fieldname": "consumption",
@@ -86,7 +86,7 @@ def get_columns():
             "fieldname": "average_consumption",
             "label": _("Average Consumption"),
             "fieldtype": "Float",
-            "width": 150
+            "width": 200
         },
         {
             "fieldname": "variance",
@@ -109,23 +109,31 @@ def get_data(filters):
 
     entries = frappe.db.sql("""
         SELECT
-            name,
-            date,
-            resource,
-            resource_type,
-            site,
-            fuel_tanker,
-            utilization_type,
-            diff_hours_copy,
-            diff_odometer,
-            litres_dispensed,
-            average_consumption,
-            fuel_utilization_id
-        FROM `tabFuel Entry`
-        WHERE utilization_type = 'Dispensed'
-        AND docstatus = 1
+            fe.name,
+            fe.date,
+            fe.resource,
+            fe.resource_type,
+            fe.site,
+            fe.fuel_tanker,
+            fe.utilization_type,
+            fe.diff_hours_copy,
+            fe.diff_odometer,
+            fe.litres_dispensed,
+            fe.average_consumption,
+            fe.fuel_utilization_id,
+            (SELECT fe2.litres_dispensed
+             FROM `tabFuel Entry` fe2
+             WHERE fe2.resource = fe.resource
+             AND fe2.utilization_type = 'Dispensed'
+             AND fe2.docstatus = 1
+             AND (fe2.date < fe.date OR (fe2.date = fe.date AND fe2.name < fe.name))
+             ORDER BY fe2.date DESC, fe2.name DESC
+             LIMIT 1) as prev_litres_dispensed
+        FROM `tabFuel Entry` fe
+        WHERE fe.utilization_type = 'Dispensed'
+        AND fe.docstatus = 1
         {conditions}
-        ORDER BY date DESC, resource
+        ORDER BY fe.date DESC, fe.resource
     """.format(conditions=conditions), filters, as_dict=1)
 
     result = []
@@ -139,7 +147,7 @@ def get_data(filters):
             "utilization_type": entry.utilization_type,
             "diff_hours": entry.diff_hours_copy or 0,
             "kilometers": entry.diff_odometer or 0,
-            "litres_dispensed": entry.litres_dispensed or 0,
+            "litres_dispensed": entry.prev_litres_dispensed or 0,
             "consumption": 0,
             "average_consumption": entry.average_consumption or 0,
             "variance": 0,
@@ -147,7 +155,7 @@ def get_data(filters):
             "alert_status": ""
         }
 
-        litres = entry.litres_dispensed or 0
+        litres = entry.prev_litres_dispensed or 0
         avg_consumption = entry.average_consumption or 0
 
         # Calculate consumption based on resource type
@@ -194,21 +202,21 @@ def get_conditions(filters):
     conditions = ""
 
     if filters.get("from_date"):
-        conditions += " AND date >= %(from_date)s"
+        conditions += " AND fe.date >= %(from_date)s"
 
     if filters.get("to_date"):
-        conditions += " AND date <= %(to_date)s"
+        conditions += " AND fe.date <= %(to_date)s"
 
     if filters.get("resource"):
-        conditions += " AND resource = %(resource)s"
+        conditions += " AND fe.resource = %(resource)s"
 
     if filters.get("resource_type"):
-        conditions += " AND resource_type = %(resource_type)s"
+        conditions += " AND fe.resource_type = %(resource_type)s"
 
     if filters.get("site"):
-        conditions += " AND site = %(site)s"
+        conditions += " AND fe.site = %(site)s"
 
     if filters.get("fuel_tanker"):
-        conditions += " AND fuel_tanker = %(fuel_tanker)s"
+        conditions += " AND fe.fuel_tanker = %(fuel_tanker)s"
 
     return conditions
