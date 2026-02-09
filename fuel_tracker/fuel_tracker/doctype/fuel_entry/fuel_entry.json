@@ -8,7 +8,6 @@
   "section_break_aa4j",
   "date",
   "utilization_type",
-  "amended_from",
   "column_break_nups",
   "site",
   "fuel_tanker",
@@ -26,21 +25,12 @@
   "fuel_supplied_id",
   "section_break_zksg",
   "resource",
-  "resource_type",
   "column_break_fqww",
-  "resource_site"
+  "resource_type",
+  "resource_site",
+  "average_consumption"
  ],
  "fields": [
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Fuel Entry",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
   {
    "fieldname": "site",
    "fieldtype": "Link",
@@ -147,31 +137,37 @@
    "fieldname": "resource",
    "fieldtype": "Link",
    "label": "Resource",
-   "options": "Item"
+   "options": "Resource"
   },
   {
    "fieldname": "column_break_fqww",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "resource.custom_stationed_site",
+   "fetch_from": "resource.stationed_site",
    "fieldname": "resource_site",
    "fieldtype": "Link",
    "label": "Resource Site",
    "options": "Site"
   },
   {
-   "fetch_from": "resource.custom_resource_type",
+   "fetch_from": "resource.resource_type",
    "fieldname": "resource_type",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Resource Type"
+   "fieldtype": "Select",
+   "label": "Resource Type",
+   "options": "\nTruck\nEquipment\nOthers"
+  },
+  {
+   "fetch_from": "resource.average_consumption",
+   "fieldname": "average_consumption",
+   "fieldtype": "Float",
+   "label": "Average Consumption"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-31 09:41:09.590098",
+ "modified": "2026-02-06 14:26:56.046240",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Entry",
@@ -192,6 +188,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

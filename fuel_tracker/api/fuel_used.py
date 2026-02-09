@@ -19,6 +19,20 @@ def fuel_used():
         # Convert JSON string to dictionary
         data = frappe.parse_json(request_data)
 
+        import base64
+        from frappe.utils.file_manager import save_file
+
+        # Decode image before inserting doc to fail early on bad data
+        odometer_image = data.get("odometer_image")
+        image_data = None
+        if odometer_image:
+            # Strip data URI prefix if present (e.g. "data:image/jpeg;base64,...")
+            if "," in odometer_image:
+                odometer_image = odometer_image.split(",", 1)[1]
+            image_data = base64.b64decode(odometer_image)
+
+        frappe.logger().info(f"odometer_image present: {bool(odometer_image)}, decoded size: {len(image_data) if image_data else 0}")
+
         # Create a new document using the correct fieldnames
         doc = frappe.get_doc({
             "doctype": "Fuel Used",
@@ -28,13 +42,29 @@ def fuel_used():
             "site": data.get("site"),
             "fuel_issued_lts": float(data.get("fuel_used", 0)),  # Update fieldname here
             "odometer_km": data.get("odometer_km"),
-            "hours_copy": data.get("hours_copy"), 
+            "hours_copy": data.get("hours_copy"),
             "requisition_number": data.get("requisition_number"),
             "review_status":"Incoming Report"
         })
 
         # Insert the document into the database
         doc.insert()
+
+        # Attach odometer image if provided
+        if image_data:
+            filename = data.get("odometer_image_filename", f"odometer_{doc.name}.jpg")
+            file_doc = save_file(
+                fname=filename,
+                content=image_data,
+                dt="Fuel Used",
+                dn=doc.name,
+                folder="Home",
+                is_private=1,
+            )
+            frappe.logger().info(f"File saved: {file_doc.file_url}")
+            doc.odometer_image = file_doc.file_url
+            doc.save(ignore_permissions=True)
+
         frappe.db.commit()
 
         # Return success response
@@ -42,6 +72,7 @@ def fuel_used():
             "status": "success",
             "message": "Fuel Used document created successfully",
             "docname": doc.name,
+            "odometer_image": doc.get("odometer_image"),
         }
     except Exception as e:
         frappe.log_error(message=str(e), title="Fuel Used API Error")
