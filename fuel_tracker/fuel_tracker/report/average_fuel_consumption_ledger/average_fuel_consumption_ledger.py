@@ -59,8 +59,20 @@ def get_columns():
             "width": 150
         },
         {
+            "fieldname": "current_hours",
+            "label": _("Current Hours"),
+            "fieldtype": "Float",
+            "width": 150
+        },
+        {
             "fieldname": "diff_hours",
             "label": _("Difference in Hours"),
+            "fieldtype": "Float",
+            "width": 200
+        },
+        {
+            "fieldname": "current_odometer",
+            "label": _("Current Odometer (KM)"),
             "fieldtype": "Float",
             "width": 200
         },
@@ -121,6 +133,8 @@ def get_data(filters):
             fe.litres_dispensed,
             fe.average_consumption,
             fe.fuel_utilization_id,
+            fu.odometer_km as current_odometer,
+            fu.hours_copy as current_hours,
             (SELECT fe2.litres_dispensed
              FROM `tabFuel Entry` fe2
              WHERE fe2.resource = fe.resource
@@ -130,6 +144,7 @@ def get_data(filters):
              ORDER BY fe2.date DESC, fe2.name DESC
              LIMIT 1) as prev_litres_dispensed
         FROM `tabFuel Entry` fe
+        LEFT JOIN `tabFuel Used` fu ON fu.name = fe.fuel_utilization_id
         WHERE fe.utilization_type = 'Dispensed'
         AND fe.docstatus = 1
         {conditions}
@@ -145,7 +160,9 @@ def get_data(filters):
             "site": entry.site,
             "fuel_tanker": entry.fuel_tanker,
             "utilization_type": entry.utilization_type,
+            "current_hours": entry.current_hours or 0,
             "diff_hours": entry.diff_hours_copy or 0,
+            "current_odometer": entry.current_odometer or 0,
             "kilometers": entry.diff_odometer or 0,
             "litres_dispensed": entry.prev_litres_dispensed or 0,
             "consumption": 0,
