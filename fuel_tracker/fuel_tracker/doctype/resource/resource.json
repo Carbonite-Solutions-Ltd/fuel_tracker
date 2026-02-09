@@ -15,6 +15,7 @@
   "resource_type",
   "current_odometer",
   "current_hours",
+  "average_consumption",
   "stationed_site",
   "section_break_mjzu",
   "descrption"
@@ -88,11 +89,16 @@
    "fieldname": "current_hours",
    "fieldtype": "Float",
    "label": "Current Hours"
+  },
+  {
+   "fieldname": "average_consumption",
+   "fieldtype": "Float",
+   "label": "Average Consumption"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-04 16:54:11.646956",
+ "modified": "2026-02-06 14:24:47.806777",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",
