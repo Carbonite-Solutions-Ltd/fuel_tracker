@@ -71,6 +71,12 @@ def get_columns():
             "width": 200
         },
         {
+            "fieldname": "previous_odometer",
+            "label": _("Previous Odometer (KM)"),
+            "fieldtype": "Float",
+            "width": 200
+        },
+        {
             "fieldname": "current_odometer",
             "label": _("Current Odometer (KM)"),
             "fieldtype": "Float",
@@ -85,6 +91,12 @@ def get_columns():
         {
             "fieldname": "litres_dispensed",
             "label": _("Previous Litres Dispensed"),
+            "fieldtype": "Float",
+            "width": 200
+        },
+        {
+            "fieldname": "fuel_supposed_to_be_used",
+            "label": _("Fuel Supposed to be Used"),
             "fieldtype": "Float",
             "width": 200
         },
@@ -143,7 +155,7 @@ def get_data(filters):
              AND (fe2.date < fe.date OR (fe2.date = fe.date AND fe2.name < fe.name))
              ORDER BY fe2.date DESC, fe2.name DESC
              LIMIT 1) as prev_litres_dispensed
-        FROM `tabFuel Entry` fe
+        FROM `tabFuel Entry` fe 
         LEFT JOIN `tabFuel Used` fu ON fu.name = fe.fuel_utilization_id
         WHERE fe.utilization_type = 'Dispensed'
         AND fe.docstatus = 1
@@ -162,9 +174,11 @@ def get_data(filters):
             "utilization_type": entry.utilization_type,
             "current_hours": entry.current_hours or 0,
             "diff_hours": entry.diff_hours_copy or 0,
+            "previous_odometer": (entry.current_odometer or 0) - (entry.diff_odometer or 0),
             "current_odometer": entry.current_odometer or 0,
             "kilometers": entry.diff_odometer or 0,
             "litres_dispensed": entry.prev_litres_dispensed or 0,
+            "fuel_supposed_to_be_used": 0,
             "consumption": 0,
             "average_consumption": entry.average_consumption or 0,
             "variance": 0,
@@ -186,6 +200,19 @@ def get_data(filters):
             if diff_km > 0 and litres > 0:
                 consumption = round(litres / diff_km, 2)
 
+        # Calculate fuel supposed to be used (average * hours/km)
+        fuel_supposed = 0
+        if avg_consumption > 0:
+            if entry.resource_type == "Equipment":
+                diff_hours = entry.diff_hours_copy or 0
+                if diff_hours > 0:
+                    fuel_supposed = round(avg_consumption * diff_hours, 2)
+            elif entry.resource_type == "Truck":
+                diff_km = entry.diff_odometer or 0
+                if diff_km > 0:
+                    fuel_supposed = round(avg_consumption * diff_km, 2)
+        row["fuel_supposed_to_be_used"] = fuel_supposed
+
         row["consumption"] = consumption
 
         # Calculate variance (consumption - average)
@@ -193,14 +220,14 @@ def get_data(filters):
             row["variance"] = round(consumption - avg_consumption, 2)
 
         # Set alert status
-        # If consumption >= average_consumption = Good (efficient)
-        # If consumption < average_consumption = Alert (using more fuel than expected)
+        # If consumption <= average_consumption = Good (using less fuel)
+        # If consumption > average_consumption = Alert (using more fuel than expected)
         if consumption > 0 and avg_consumption > 0:
-            if consumption >= avg_consumption:
+            if consumption <= avg_consumption:
                 row["alert_status"] = "Good"
             else:
-                # consumption is below average - calculate how much below
-                variance_pct = ((avg_consumption - consumption) / avg_consumption) * 100
+                # consumption is above average - calculate how much above
+                variance_pct = ((consumption - avg_consumption) / avg_consumption) * 100
                 if variance_pct > 20:
                     row["alert_status"] = "High Alert"
                 elif variance_pct > 10:
