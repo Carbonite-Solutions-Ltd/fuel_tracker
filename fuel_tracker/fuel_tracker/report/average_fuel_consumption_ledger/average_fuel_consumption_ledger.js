@@ -63,14 +63,6 @@ frappe.query_reports["Average Fuel Consumption Ledger"] = {
 			}
 		}
 
-		// Negative variance = good (consumption < average, more efficient)
-		// Positive variance = bad (consumption > average, less efficient)
-		if (column.fieldname == "variance" && data.variance > 0) {
-			value = "<span style='color: red; font-weight: bold;'>" + value + "</span>";
-		} else if (column.fieldname == "variance" && data.variance < 0) {
-			value = "<span style='color: green;'>" + value + "</span>";
-		}
-
 		return value;
 	}
 };
