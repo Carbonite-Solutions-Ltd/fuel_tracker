@@ -43,6 +43,13 @@ class FuelEntry(Document):
         if existing_balance:
             # Update the existing Fuel Balance
             balance_entry = frappe.get_doc("Fuel Balance", existing_balance[0].name)
+
+            # A cancelled Fuel Balance can't be edited and no longer holds a live
+            # figure to adjust, so leave it untouched. This keeps a Fuel Entry
+            # cancellable even when its Fuel Balance was already cancelled.
+            if balance_entry.docstatus == 2:
+                return
+
             balance_entry.date = self.date
         else:
             # Or create a new Fuel Balance if none exists
