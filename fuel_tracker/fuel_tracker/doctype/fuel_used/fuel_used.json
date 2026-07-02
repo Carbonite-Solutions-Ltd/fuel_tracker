@@ -51,7 +51,7 @@
   {
    "fieldname": "resource",
    "fieldtype": "Link",
-   "label": "Resource",
+   "label": "Vehicle Registration/Machine Code",
    "options": "Resource",
    "reqd": 1
   },
@@ -94,10 +94,10 @@
    "fieldtype": "Section Break"
   },
   {
-   "fetch_from": "resource.reg_no",
+   "fetch_from": "resource.chassis_number",
    "fieldname": "reg_no",
    "fieldtype": "Data",
-   "label": "Reg. No",
+   "label": "Chassis Number",
    "read_only": 1
   },
   {
@@ -202,11 +202,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-11 10:49:53.812932",
+ "modified": "2026-07-02 13:05:14.402429",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
