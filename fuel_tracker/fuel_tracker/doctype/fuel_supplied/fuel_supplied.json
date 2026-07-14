@@ -24,7 +24,8 @@
   {
    "fieldname": "date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Date",
+   "reqd": 1
   },
   {
    "fetch_from": "fuel_tanker.site",
@@ -41,7 +42,8 @@
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
    "label": "Fuel Tanker",
-   "options": "Fuel Tanker"
+   "options": "Fuel Tanker",
+   "reqd": 1
   },
   {
    "fieldname": "fuel_supplied",
