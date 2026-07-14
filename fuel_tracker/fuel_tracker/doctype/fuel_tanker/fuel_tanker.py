@@ -13,21 +13,50 @@ TANKER_ASSET_NAMING_SERIES = "ACC-ASS-.YYYY.-"
 class FuelTanker(Document):
 	def _validate_links(self):
 		# On insert, frappe validates links before any controller hook runs
-		# (Document.insert calls _validate_links first), so the only way to
-		# auto-create the Item in time is to do it right before the check.
+		# (Document.insert calls _validate_links first), so the Item for a
+		# new tanker must be created right before the check. This also runs
+		# before naming, so self.tanker is set in time for the autoname.
 		self.ensure_tanker_item()
 		super()._validate_links()
 
-	def ensure_tanker_item(self):
-		"""Auto-create the linked Item when the entered tanker doesn't exist.
+	def after_rename(self, old, new, merge=False):
+		"""Carry the linked records along when the tanker is renamed.
 
-		The tanker field links to Item, so registering a brand-new tanker used
-		to require creating the Item first by hand. Instead, a typed name that
-		matches no Item is created here as a non-stock fixed-asset Item
-		(resource type Truck, asset category TRUCKS & VEHICLES, auto-create
-		assets on purchase), so the tanker form saves in one step.
+		Renaming happens via the Rename action (editing the tanker field on
+		a saved doc is reverted by frappe's autoname sync). The linked Item
+		and the tanker's Fuel Balance are autonamed after this document, so
+		both follow the new name. If an Item/Fuel Balance already exists
+		under the new name, it is left alone and simply gets linked.
 		"""
-		if not self.tanker or frappe.db.exists("Item", self.tanker):
+		if merge:
+			return
+
+		if frappe.db.exists("Item", old) and not frappe.db.exists("Item", new):
+			frappe.rename_doc("Item", old, new, show_alert=False)
+
+		if frappe.db.exists("Fuel Balance", old) and not frappe.db.exists("Fuel Balance", new):
+			# force: Fuel Balance deliberately has allow_rename off for users;
+			# this controlled rename just keeps its name mirroring the tanker.
+			frappe.rename_doc("Fuel Balance", old, new, force=True, show_alert=False)
+
+	def ensure_tanker_item(self):
+		"""Create and link the Item for a tanker registered as new.
+
+		With "New Tanker Item" ticked, the name entered in new_tanker_name
+		becomes the tanker link; if no Item with that name exists yet it is
+		created as a non-stock fixed-asset Item (resource type Truck, asset
+		category TRUCKS & VEHICLES, auto-create assets on purchase). Without
+		the flag, the tanker link must point at an existing Item and normal
+		link validation applies.
+		"""
+		if not (self.is_new_tanker and (self.new_tanker_name or "").strip()):
+			return
+
+		self.tanker = self.new_tanker_name.strip()
+		self.is_new_tanker = 0
+		self.new_tanker_name = None
+
+		if frappe.db.exists("Item", self.tanker):
 			return
 
 		uom = "Nos" if frappe.db.exists("UOM", "Nos") else frappe.get_all("UOM", limit=1, pluck="name")[0]

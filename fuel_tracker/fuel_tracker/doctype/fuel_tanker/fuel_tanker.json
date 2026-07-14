@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "is_new_tanker",
   "tanker",
+  "new_tanker_name",
   "tanker_threshold",
   "column_break_sdli",
   "site"
@@ -24,14 +26,33 @@
    "reqd": 1
   },
   {
-   "description": "Search for the tanker's Item. If no Item with this name exists, it is created automatically on save as a non-stock fixed asset (resource type Truck, asset category TRUCKS & VEHICLES).",
+   "default": "0",
+   "depends_on": "eval:doc.__islocal",
+   "description": "Tick to register a tanker that has no Item yet; the Item is created automatically on save.",
+   "fieldname": "is_new_tanker",
+   "fieldtype": "Check",
+   "label": "New Tanker Item"
+  },
+  {
+   "depends_on": "eval:!doc.is_new_tanker",
+   "description": "Select the tanker's existing Item. To register a brand-new tanker, tick New Tanker Item instead. To rename a saved tanker, use the Rename action — the linked Item follows automatically.",
    "fieldname": "tanker",
    "fieldtype": "Link",
    "label": "Tanker",
    "link_filters": "[[\"Item\",\"custom_resource_type\",\"is\",\"set\"]]",
+   "mandatory_depends_on": "eval:!doc.is_new_tanker",
+   "only_select": 1,
    "options": "Item",
-   "reqd": 1,
    "unique": 1
+  },
+  {
+   "depends_on": "eval:doc.is_new_tanker",
+   "description": "Name/registration number of the new tanker. An Item with this name is created automatically on save: non-stock fixed asset, resource type Truck, asset category TRUCKS & VEHICLES.",
+   "fieldname": "new_tanker_name",
+   "fieldtype": "Data",
+   "label": "New Tanker Name",
+   "mandatory_depends_on": "eval:doc.is_new_tanker",
+   "no_copy": 1
   },
   {
    "fieldname": "tanker_threshold",
