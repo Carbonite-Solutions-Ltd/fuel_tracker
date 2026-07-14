@@ -44,6 +44,12 @@ frappe.query_reports["Fuel Balance"] = {
             value = `<span style="color: red;">${value}</span>`;
         } else if (column.fieldname === "litres_adjusted" && data.litres_adjusted) {
             value = `<span style="color: ${data.litres_adjusted > 0 ? "green" : "red"};">${value}</span>`;
+        } else if (column.fieldname === "status" && data.status) {
+            if (data.status === "Low") {
+                value = `<span style="color: white; background-color: red; padding: 2px 8px; border-radius: 3px; font-weight: bold;">${value}</span>`;
+            } else {
+                value = `<span style="color: green;">${value}</span>`;
+            }
         }
 
         return value;

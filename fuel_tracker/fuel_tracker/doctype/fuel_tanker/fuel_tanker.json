@@ -10,6 +10,7 @@
   "tanker",
   "new_tanker_name",
   "tanker_threshold",
+  "minimum_level",
   "column_break_sdli",
   "site"
  ],
@@ -58,6 +59,12 @@
    "fieldname": "tanker_threshold",
    "fieldtype": "Float",
    "label": "Tanker Maximum Threshold"
+  },
+  {
+   "description": "Reorder level. Dispenses and adjustments that take the balance below this warn the user, and the Fuel Balance report flags the tanker as Low.",
+   "fieldname": "minimum_level",
+   "fieldtype": "Float",
+   "label": "Minimum Level (L)"
   }
  ],
  "index_web_pages_for_search": 1,

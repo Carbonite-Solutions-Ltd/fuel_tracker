@@ -20,6 +20,7 @@ def get_columns():
         {"label": _("Liters Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 200},
         {"label": _("Liters Adjusted"), "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 200},
         {"label": _("Current Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 200},
+        {"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 100},
     ]
     return columns
 
@@ -40,9 +41,12 @@ def get_data(filters):
             (SUM(CASE WHEN fe.utilization_type = 'Opening Balance' THEN COALESCE(fe.current_balance, 0) ELSE 0 END)
                 + COALESCE(SUM(fe.litres_supplied), 0)
                 - COALESCE(SUM(fe.litres_dispensed), 0)
-                + COALESCE(SUM(fe.litres_adjusted), 0)) as current_balance
+                + COALESCE(SUM(fe.litres_adjusted), 0)) as current_balance,
+            MAX(ft.minimum_level) as minimum_level
         FROM
             `tabFuel Entry` fe
+        LEFT JOIN
+            `tabFuel Tanker` ft ON ft.name = fe.fuel_tanker
         WHERE
             {conditions}
         GROUP BY
@@ -51,6 +55,10 @@ def get_data(filters):
             MAX(fe.date)
     """, filters, as_dict=1)
     for row in data:
+        if row["minimum_level"] and row["current_balance"] < row["minimum_level"]:
+            row["status"] = "Low"
+        else:
+            row["status"] = "OK"
         if row["litres_supplied"]:
             row["litres_supplied_style"] = "color: green;"
         if row["litres_dispensed"]:

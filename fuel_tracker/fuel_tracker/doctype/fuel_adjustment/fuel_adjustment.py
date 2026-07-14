@@ -97,11 +97,24 @@ class FuelAdjustment(Document):
                 indicator="orange",
                 alert=True,
             )
-        threshold = flt(frappe.db.get_value("Fuel Tanker", self.fuel_tanker, "tanker_threshold"))
+
+        limits = frappe.db.get_value(
+            "Fuel Tanker", self.fuel_tanker, ["tanker_threshold", "minimum_level"], as_dict=True
+        ) or frappe._dict()
+        threshold = flt(limits.tanker_threshold)
+        minimum_level = flt(limits.minimum_level)
+
         if threshold and new_balance > threshold:
             frappe.msgprint(
                 _("This adjustment raises the balance of tanker {0} to {1} L, above its maximum threshold of {2} L.")
                 .format(self.fuel_tanker, new_balance, threshold),
+                indicator="orange",
+                alert=True,
+            )
+        if minimum_level and new_balance < minimum_level:
+            frappe.msgprint(
+                _("The balance of tanker {0} falls below its minimum level of {1} L (new balance: {2} L). Consider reordering fuel.")
+                .format(self.fuel_tanker, minimum_level, new_balance),
                 indicator="orange",
                 alert=True,
             )

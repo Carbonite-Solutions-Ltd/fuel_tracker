@@ -56,10 +56,21 @@ class FuelUsed(Document):
                 )
 
     def warn_if_overdrawing(self, previous_balance):
-        if flt(self.fuel_issued_lts) > flt(previous_balance):
+        new_balance = flt(previous_balance) - flt(self.fuel_issued_lts)
+
+        if new_balance < 0:
             frappe.msgprint(
                 _("Dispensing {0} L exceeds the current balance of tanker {1} ({2} L); the balance will go negative.")
                 .format(flt(self.fuel_issued_lts), self.fuel_tanker, flt(previous_balance)),
+                indicator="orange",
+                alert=True,
+            )
+
+        minimum_level = flt(frappe.db.get_value("Fuel Tanker", self.fuel_tanker, "minimum_level"))
+        if minimum_level and new_balance < minimum_level:
+            frappe.msgprint(
+                _("The balance of tanker {0} falls below its minimum level of {1} L (new balance: {2} L). Consider reordering fuel.")
+                .format(self.fuel_tanker, minimum_level, new_balance),
                 indicator="orange",
                 alert=True,
             )
