@@ -39,9 +39,10 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Receiving fuel from the fuel tanker at the site.",
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
-   "label": "Fuel Tanker",
+   "label": "Fuel Bowser/Mounted Tank",
    "options": "Fuel Tanker",
    "reqd": 1
   },
@@ -61,9 +62,11 @@
    "search_index": 1
   },
   {
+   "description": "The tanker that is delivering the fuel.",
    "fieldname": "supplier",
-   "fieldtype": "Data",
-   "label": "Discharging Tanker"
+   "fieldtype": "Link",
+   "label": "Discharging Tanker",
+   "options": "Fuel Tanker"
   },
   {
    "fieldname": "reciever",
