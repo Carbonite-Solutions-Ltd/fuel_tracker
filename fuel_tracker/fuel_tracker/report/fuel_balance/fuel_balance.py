@@ -15,6 +15,7 @@ def get_columns():
         {"label": _("AS @ Date"), "fieldname": "date", "fieldtype": "Date", "width": 200},
         {"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 220},
         {"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 200},
+        {"label": _("Opening Balance"), "fieldname": "opening_balance", "fieldtype": "Float", "width": 180},
         {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 200},
         {"label": _("Liters Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 200},
         {"label": _("Current Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 200},
@@ -23,14 +24,20 @@ def get_columns():
 
 def get_data(filters):
     conditions = get_conditions(filters)
+    # Opening Balance entries carry their amount in current_balance (not in
+    # litres_supplied/litres_dispensed), so the balance must start from them
+    # to tally with the Fuel Balance doctype.
     data = frappe.db.sql(f"""
         SELECT
             MAX(fe.date) as date,
             fe.site,
             fe.fuel_tanker,
-            SUM(fe.litres_supplied) as litres_supplied,
-            SUM(fe.litres_dispensed) as litres_dispensed,
-            (SUM(fe.litres_supplied) - SUM(fe.litres_dispensed)) as current_balance
+            SUM(CASE WHEN fe.utilization_type = 'Opening Balance' THEN COALESCE(fe.current_balance, 0) ELSE 0 END) as opening_balance,
+            COALESCE(SUM(fe.litres_supplied), 0) as litres_supplied,
+            COALESCE(SUM(fe.litres_dispensed), 0) as litres_dispensed,
+            (SUM(CASE WHEN fe.utilization_type = 'Opening Balance' THEN COALESCE(fe.current_balance, 0) ELSE 0 END)
+                + COALESCE(SUM(fe.litres_supplied), 0)
+                - COALESCE(SUM(fe.litres_dispensed), 0)) as current_balance
         FROM
             `tabFuel Entry` fe
         WHERE
@@ -48,8 +55,9 @@ def get_data(filters):
     return data
 
 def get_conditions(filters):
-    conditions = "1=1"
-    status_map = {"Submitted": 1}  # Map string values to integers
+    # Only submitted entries move the balance; drafts and cancelled entries
+    # (docstatus 0/2) must never count towards it.
+    conditions = "fe.docstatus = 1"
 
     if filters.get("date"):
         conditions += " AND fe.date <= %(date)s"
@@ -57,14 +65,5 @@ def get_conditions(filters):
         conditions += " AND fe.fuel_tanker IN %(fuel_tanker)s"
     if filters.get("site"):
         conditions += " AND fe.site IN %(site)s"
-    if filters.get("docstatus"):
-        # Map the string status to its corresponding docstatus integer
-        docstatus_value = status_map.get(filters["docstatus"], None)
-        if docstatus_value is not None:
-            filters["docstatus"] = docstatus_value  # Update the filter to use the integer value
-            conditions += " AND fe.docstatus = %(docstatus)s"
-    else:
-        # Optionally handle cases where no status is provided or an invalid status is provided
-        pass
 
     return conditions
