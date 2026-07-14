@@ -13,7 +13,7 @@ frappe.ui.form.on("Fuel Used", {
             }
         } else if (frm.doc.resource_type === "Equipment") {
             if (frm.doc.hours_copy < frm.doc.previous_hours_copy) {
-                frappe.msgprint(__("hours_copy cannot be less than the previous hours_copy: {0} hours_copy", [frm.doc.previous_hours_copy]));
+                frappe.msgprint(__("Hours reading cannot be less than the previous hours: {0}", [frm.doc.previous_hours_copy]));
                 frappe.validated = false;
             }
         }

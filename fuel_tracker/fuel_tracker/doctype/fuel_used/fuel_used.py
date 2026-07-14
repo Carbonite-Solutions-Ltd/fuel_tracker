@@ -1,33 +1,68 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import flt
 
 class FuelUsed(Document):
     def before_submit(self):
         if self.review_status == "Incoming Report":
             self.review_status = "Reviewed"
+        self.validate_fuel_quantity()
+        self.sync_and_validate_resource_reading()
 
     def on_submit(self):
-        # Perform validation based on resource type
-        self.validate_resource_usage()
-        
         # Get the previous balance or create a new Fuel Balance if it doesn't exist
         previous_balance, balance_doc = self.get_or_create_fuel_balance()
-        
+
+        self.warn_if_overdrawing(previous_balance)
+
         # Create a Fuel Entry document to record the fuel used
         self.create_fuel_entry(previous_balance)
-        
+
         # Update the current odometer or hours in the Resource doctype
         self.update_resource_usage()
 
-    def validate_resource_usage(self):
+    def validate_fuel_quantity(self):
+        if flt(self.fuel_issued_lts) <= 0:
+            frappe.throw(_("Fuel Issued (LTS) must be greater than zero."))
+
+    def sync_and_validate_resource_reading(self):
+        """Refresh the previous reading from the Resource, then validate.
+
+        A draft (e.g. an incoming mobile report) can sit for a while before
+        it is reviewed and submitted, so the previous reading fetched when
+        the draft was created may be stale by then — another Fuel Used for
+        the same resource may have been submitted in between. The Resource's
+        stored reading is authoritative at submit time: it becomes the
+        previous reading here (so the ledger diff is measured from it), and
+        the new reading may not fall behind it.
+        """
         resource = frappe.get_doc("Resource", self.resource)
-        
+        self.resource_type = resource.resource_type
+
         if self.resource_type == "Truck":
-            if self.odometer_km < self.previous_odometer_km:
-                frappe.throw(f"Odometer reading cannot be less than the previous reading: {self.previous_odometer_km} km")
+            self.previous_odometer_km = flt(resource.current_odometer)
+            if flt(self.odometer_km) < self.previous_odometer_km:
+                frappe.throw(
+                    _("Odometer reading {0} km cannot be less than the resource's current reading: {1} km")
+                    .format(flt(self.odometer_km), self.previous_odometer_km)
+                )
         elif self.resource_type == "Equipment":
-            if self.hours_copy < self.previous_hours_copy:
-                frappe.throw(f"Hours cannot be less than the previous hours: {self.previous_hours_copy} hours")
+            self.previous_hours_copy = flt(resource.current_hours)
+            if flt(self.hours_copy) < self.previous_hours_copy:
+                frappe.throw(
+                    _("Hours reading {0} cannot be less than the resource's current hours: {1}")
+                    .format(flt(self.hours_copy), self.previous_hours_copy)
+                )
+
+    def warn_if_overdrawing(self, previous_balance):
+        if flt(self.fuel_issued_lts) > flt(previous_balance):
+            frappe.msgprint(
+                _("Dispensing {0} L exceeds the current balance of tanker {1} ({2} L); the balance will go negative.")
+                .format(flt(self.fuel_issued_lts), self.fuel_tanker, flt(previous_balance)),
+                indicator="orange",
+                alert=True,
+            )
 
     def get_or_create_fuel_balance(self):
         existing_balance = frappe.get_list("Fuel Balance",
@@ -64,9 +99,9 @@ class FuelUsed(Document):
 
         # Calculate the difference based on resource type
         if self.resource_type == "Truck":
-            fuel_entry_data["diff_odometer"] = self.odometer_km - self.previous_odometer_km
+            fuel_entry_data["diff_odometer"] = flt(self.odometer_km) - flt(self.previous_odometer_km)
         elif self.resource_type == "Equipment":
-            fuel_entry_data["diff_hours_copy"] = self.hours_copy - self.previous_hours_copy
+            fuel_entry_data["diff_hours_copy"] = flt(self.hours_copy) - flt(self.previous_hours_copy)
 
         fuel_entry = frappe.get_doc(fuel_entry_data)
         fuel_entry.flags.ignore_permissions = True  # If necessary to bypass permission checks

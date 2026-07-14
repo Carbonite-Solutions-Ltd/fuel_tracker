@@ -148,7 +148,7 @@ def get_fuel_tankers():
 
 
 # ? Function To get the Resources list
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_filtered_items():
     """
     Fetch a list of resources from the "Resource" doctype.
@@ -292,17 +292,18 @@ def user_dispensed_today():
 
 
 #  ? Function to get list of Fuel Used
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def fuel_list():
     """
     Fetch the list of all Fuel Used Documents
     """
     try:
-        list = frappe.get_all("Fuel Used")
+        # get_list (unlike get_all) enforces the caller's permissions
+        records = frappe.get_list("Fuel Used", limit_page_length=0)
 
         return {
             "status": "success",
-            "data": list,
+            "data": records,
         }
     except Exception as e:
         # Log the error and return a failure response
@@ -313,16 +314,18 @@ def fuel_list():
 
 
 #  ? Function to get list of Fuel Used Documents
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_fuel_used_records():
-    # Fetch all records from the "Fuel Used" DocType with all fields
-    fuel_used_records = frappe.get_all(
+    # Fetch all records from the "Fuel Used" DocType with all fields.
+    # get_list (unlike get_all) enforces the caller's permissions.
+    fuel_used_records = frappe.get_list(
         "Fuel Used",  # The DocType name
         fields=["*"],  # Fetch all fields
         filters={},    # No filters, fetch all records
-        order_by="creation"  # Optional: Order by creation date
+        order_by="creation",  # Optional: Order by creation date
+        limit_page_length=0,
     )
-    
+
     return fuel_used_records
 
 
