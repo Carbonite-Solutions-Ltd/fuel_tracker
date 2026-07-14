@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import today
 
 from fuel_tracker.tests.utils import balance, dispense, entry_for, make_resource, make_tanker, messages_text, supply
 
@@ -77,6 +78,41 @@ class TestFuelUsed(FrappeTestCase):
 		self.assertEqual(doc.docstatus, 1)
 		self.assertEqual(balance(tanker), -40)
 		self.assertIn("exceeds the current balance", messages_text())
+
+	def test_missing_previous_reading_blocked(self):
+		# the resource must carry an initial reading before fuel can be
+		# dispensed against it
+		tanker = make_tanker("TEST-FT-FU-8").name
+		supply(tanker, 100)
+		truck = make_resource("TEST-FT-FU-TRK6", "Truck", reading=0).name
+		eq = make_resource("TEST-FT-FU-EQ3", "Equipment", reading=0).name
+
+		with self.assertRaises(frappe.ValidationError):
+			dispense(tanker, truck, 10, odometer_km=500)
+		with self.assertRaises(frappe.ValidationError):
+			dispense(tanker, eq, 10, hours_copy=50)
+
+	def test_quantity_and_current_reading_mandatory(self):
+		tanker = make_tanker("TEST-FT-FU-9").name
+		truck = make_resource("TEST-FT-FU-TRK7", "Truck", reading=100).name
+		site = frappe.db.get_value("Fuel Tanker", tanker, "site")
+
+		# the fuel quantity is hard-mandatory, even for drafts
+		with self.assertRaises(frappe.MandatoryError):
+			frappe.get_doc({
+				"doctype": "Fuel Used", "date": today(), "fuel_tanker": tanker,
+				"site": site, "resource": truck, "odometer_km": 200,
+			}).insert()
+
+		# a draft without the current reading may exist (incoming mobile
+		# reports), but it cannot be submitted
+		doc = frappe.get_doc({
+			"doctype": "Fuel Used", "date": today(), "fuel_tanker": tanker,
+			"site": site, "resource": truck, "fuel_issued_lts": 10,
+		})
+		doc.insert()
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
 
 	def test_below_minimum_level_warning(self):
 		tanker = make_tanker("TEST-FT-FU-7", minimum_level=100).name

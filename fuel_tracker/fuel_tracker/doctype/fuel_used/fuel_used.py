@@ -42,6 +42,15 @@ class FuelUsed(Document):
 
         if self.resource_type == "Truck":
             self.previous_odometer_km = flt(resource.current_odometer)
+            if not self.previous_odometer_km:
+                frappe.throw(
+                    _("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel.")
+                    .format(frappe.bold(self.resource))
+                )
+            # mandatory_depends_on only guards the desk form; enforce at
+            # submit for API/script-created documents too
+            if not flt(self.odometer_km):
+                frappe.throw(_("Current Odometer (KM) is required to dispense fuel to a truck."))
             if flt(self.odometer_km) < self.previous_odometer_km:
                 frappe.throw(
                     _("Odometer reading {0} km cannot be less than the resource's current reading: {1} km")
@@ -49,6 +58,13 @@ class FuelUsed(Document):
                 )
         elif self.resource_type == "Equipment":
             self.previous_hours_copy = flt(resource.current_hours)
+            if not self.previous_hours_copy:
+                frappe.throw(
+                    _("Resource {0} has no Current Hours reading. Set it on the Resource record before dispensing fuel.")
+                    .format(frappe.bold(self.resource))
+                )
+            if not flt(self.hours_copy):
+                frappe.throw(_("Current Hours is required to dispense fuel to equipment."))
             if flt(self.hours_copy) < self.previous_hours_copy:
                 frappe.throw(
                     _("Hours reading {0} cannot be less than the resource's current hours: {1}")

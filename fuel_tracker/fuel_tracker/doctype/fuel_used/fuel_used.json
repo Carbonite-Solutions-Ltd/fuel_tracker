@@ -124,12 +124,14 @@
    "depends_on": "eval:doc.resource_type=='Truck';",
    "fieldname": "odometer_km",
    "fieldtype": "Float",
-   "label": "Current Odometer (KM)"
+   "label": "Current Odometer (KM)",
+   "mandatory_depends_on": "eval:doc.resource_type=='Truck'"
   },
   {
    "fieldname": "fuel_issued_lts",
    "fieldtype": "Float",
-   "label": "Fuel Issued (LTS)"
+   "label": "Fuel Issued (LTS)",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.resource_type=='Truck';",
@@ -150,7 +152,8 @@
    "depends_on": "eval:doc.resource_type=='Equipment';",
    "fieldname": "hours_copy",
    "fieldtype": "Float",
-   "label": "Current Hours"
+   "label": "Current Hours",
+   "mandatory_depends_on": "eval:doc.resource_type=='Equipment'"
   },
   {
    "fieldname": "requisition_number",
