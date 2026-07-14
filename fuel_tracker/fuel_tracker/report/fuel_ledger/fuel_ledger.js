@@ -1,22 +1,6 @@
 frappe.query_reports["Fuel Ledger"] = {
     "filters": [
         {
-            "fieldname": "company",
-            "label": __("Company"),
-            "fieldtype": "Link",
-            "options": "Company",
-            "default": frappe.defaults.get_user_default("Company"),
-        },
-        {
-            "fieldname": "docstatus",
-            "label": __("Status"),
-            "fieldtype": "Select",
-            "options": ["Submitted"], // Add options as per your doctype's status values
-            "default": "Submitted", // Optionally set a default status
-            "hidden": 1
-        },
-        
-        {
             "fieldname": "from_date",
             "label": __("From Date"),
             "fieldtype": "Date",
@@ -70,6 +54,8 @@ frappe.query_reports["Fuel Ledger"] = {
             value = `<span style="color: green;">${value}</span>`;
         } else if (column.fieldname === "litres_dispensed" && data.litres_dispensed) {
             value = `<span style="color: red;">${value}</span>`;
+        } else if (column.fieldname === "litres_adjusted" && data.litres_adjusted) {
+            value = `<span style="color: ${data.litres_adjusted > 0 ? "green" : "red"};">${value}</span>`;
         }
 
         return value;

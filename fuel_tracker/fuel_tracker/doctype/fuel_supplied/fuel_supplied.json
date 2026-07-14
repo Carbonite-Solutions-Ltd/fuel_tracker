@@ -24,7 +24,8 @@
   {
    "fieldname": "date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Date",
+   "reqd": 1
   },
   {
    "fetch_from": "fuel_tanker.site",
@@ -38,10 +39,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Receiving fuel from the fuel tanker at the site.",
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
-   "label": "Fuel Tanker",
-   "options": "Fuel Tanker"
+   "label": "Fuel Bowser/Mounted Tank",
+   "options": "Fuel Tanker",
+   "reqd": 1
   },
   {
    "fieldname": "fuel_supplied",
@@ -59,9 +62,11 @@
    "search_index": 1
   },
   {
+   "description": "The tanker that is delivering the fuel.",
    "fieldname": "supplier",
-   "fieldtype": "Data",
-   "label": "Discharging Tanker"
+   "fieldtype": "Link",
+   "label": "Discharging Tanker",
+   "options": "Fuel Tanker"
   },
   {
    "fieldname": "reciever",
@@ -80,6 +85,7 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,

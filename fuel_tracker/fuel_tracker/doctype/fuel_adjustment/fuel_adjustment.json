@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "autoname": "FADJ-.#####",
+ "creation": "2026-07-14 12:45:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_main",
+  "date",
+  "fuel_tanker",
+  "site",
+  "column_break_main",
+  "adjustment_mode",
+  "reason",
+  "remarks",
+  "section_break_adj",
+  "system_balance",
+  "measured_balance",
+  "column_break_adj",
+  "quantity",
+  "adjustment_litres",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_main",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fuel_tanker",
+   "fieldtype": "Link",
+   "label": "Fuel Tanker",
+   "options": "Fuel Tanker",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "fuel_tanker.site",
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Measured Balance",
+   "fieldname": "adjustment_mode",
+   "fieldtype": "Select",
+   "label": "Adjustment Based On",
+   "options": "Measured Balance\nQuantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "\nPhysical Count Variance\nSpillage\nTheft\nEvaporation\nMeter Error\nData Entry Correction\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "mandatory_depends_on": "eval:doc.reason=='Other'"
+  },
+  {
+   "fieldname": "section_break_adj",
+   "fieldtype": "Section Break",
+   "label": "Adjustment"
+  },
+  {
+   "description": "Ledger balance of the tanker. Captured for reference while drafting and re-read from the live balance at submit time.",
+   "fieldname": "system_balance",
+   "fieldtype": "Float",
+   "label": "Current System Balance (L)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.adjustment_mode=='Measured Balance'",
+   "description": "Physical dip reading of the tanker. The adjustment is computed as measured balance minus system balance.",
+   "fieldname": "measured_balance",
+   "fieldtype": "Float",
+   "label": "Measured Balance (L)"
+  },
+  {
+   "fieldname": "column_break_adj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.adjustment_mode=='Quantity'",
+   "description": "Signed litres: positive adds fuel to the balance, negative removes fuel.",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Adjustment Quantity (L, +/-)"
+  },
+  {
+   "fieldname": "adjustment_litres",
+   "fieldtype": "Float",
+   "label": "Adjustment (L)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Fuel Adjustment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-14 12:45:00.000000",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Adjustment",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

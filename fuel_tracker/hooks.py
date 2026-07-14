@@ -4,7 +4,16 @@ app_publisher = "Carbonite Solutions Ltd"
 app_description = "Fuel Tracker Application"
 app_email = "admin@carbonitesolutions.com"
 app_license = "mit"
-# required_apps = []
+required_apps = ["erpnext"]
+
+# Fixtures
+# --------
+# Site config shipped with the app: the Item custom field the Fuel Tanker
+# doctype depends on (tanker Link filters on it; auto-created tanker Items
+# set it).
+fixtures = [
+    {"dt": "Custom Field", "filters": [["name", "in", ["Item-custom_resource_type"]]]},
+]
 
 # Includes in <head>
 # ------------------
@@ -122,41 +131,13 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-    "Doctype1": {
-        "on_update": "fuel_tracker.api.login.verify_login"
-    },
-    "Doctype2": {
-        "on_update": "fuel_tracker.api.fuel_used.fuel_used"
-    },
-    "Doctype3": {
-        "on_update": "fuel_tracker.api.fuel_used.get_fuel_tankers"
-    },
-    "Doctype4": {
-        "on_update": "fuel_tracker.api.fuel_used.get_filtered_items"
-    },
-    "Doctype5": {
-        "on update": "fuel_tracker.api.fuel_used.delete_fuel_used_document"
-    },
-    "Doctype6": {
-        "on_update": "fuel_tracker.api.fuel_used.get_site"
-    },
-    "Doctype7": {
-        "on_update": "fuel_tracker.api.fuel_used.fuel_list"
-    },
-    "Doctype8": {
-        "on_update": "fuel_tracker.api.fuel_used.get_all_fuel_used_records"
-    },
-    "Doctype9": {
-        "on_update": "fuel_tracker.api.dashboard.fuelBalance"
-    },
-    "Doctype10": {
-        "on_update": "fuel_tracker.api.fuel_used.get_user_fuel_used_documents"
-    },
-    "Doctype11": {
-        "on_update": "fuel_tracker.api.fuel_used.user_dispensed_today"
-    },
-}
+# doc_events = {
+# 	"*": {
+# 		"on_update": "method",
+# 		"on_cancel": "method",
+# 		"on_trash": "method"
+# 	}
+# }
 
 # Scheduled Tasks
 # ---------------

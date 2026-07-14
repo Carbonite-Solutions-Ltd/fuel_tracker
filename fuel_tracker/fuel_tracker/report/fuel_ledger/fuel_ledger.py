@@ -15,6 +15,7 @@ def execute(filters=None):
             "resource": None,
             "litres_supplied": sum(row.get("litres_supplied") or 0 for row in data),
             "litres_dispensed": sum(row.get("litres_dispensed") or 0 for row in data),
+            "litres_adjusted": sum(row.get("litres_adjusted") or 0 for row in data),
             "previous_balance": None,
             "current_balance": None,
             "previous_odometer_km": None,
@@ -40,6 +41,7 @@ def get_columns():
         {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 150},
         {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "width": 150},
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 150},
+        {"label": "Litres Adjusted", "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 150},
         {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 150},
         {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 150},
         {"label": "Previous Odometer", "fieldname": "previous_odometer_km", "fieldtype": "Float", "width": 150},
@@ -58,7 +60,7 @@ def get_data(filters):
     data = frappe.db.sql(f"""
         SELECT
             fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
-            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed,
+            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
             fe.previous_balance, fe.current_balance, fu.previous_odometer_km, fu.odometer_km, fe.diff_odometer, fu.previous_hours_copy, fu.hours_copy, fe.diff_hours_copy, fe.name
         FROM
             `tabFuel Entry` fe
@@ -66,6 +68,8 @@ def get_data(filters):
             `tabFuel Used` fu ON fe.fuel_utilization_id = fu.name
         WHERE
             {conditions}
+        ORDER BY
+            fe.date, fe.name
         """, filters, as_dict=1)
     for row in data:
         if row["litres_supplied"]:
@@ -76,8 +80,9 @@ def get_data(filters):
 
 def get_conditions(filters):
     """Returns SQL conditions based on filters."""
-    conditions = "1=1"
-    status_map = {"Submitted": 1}  # Map string values to integers
+    # Only submitted entries belong in the ledger; drafts and cancelled
+    # entries (docstatus 0/2) must never appear.
+    conditions = "fe.docstatus = 1"
 
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"
@@ -89,15 +94,6 @@ def get_conditions(filters):
         conditions += " AND fe.site IN %(site)s"
     if filters.get("resource"):
         conditions += " AND fu.resource IN %(resource)s"
-    if filters.get("docstatus"):
-        # Map the string status to its corresponding docstatus integer
-        docstatus_value = status_map.get(filters["docstatus"], None)
-        if docstatus_value is not None:
-            filters["docstatus"] = docstatus_value  # Update the filter to use the integer value
-            conditions += " AND fe.docstatus = %(docstatus)s"
-    else:
-        # Optionally handle cases where no status is provided or an invalid status is provided
-        pass
 
     return conditions
 

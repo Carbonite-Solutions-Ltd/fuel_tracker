@@ -1,5 +1,6 @@
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt
 
 class FuelEntry(Document):
     def on_submit(self):
@@ -23,15 +24,20 @@ class FuelEntry(Document):
         elif self.utilization_type == "Dispensed" and self.fuel_utilization_id:
             linked_docname = self.fuel_utilization_id
             linked_doctype = "Fuel Used"
+        elif self.utilization_type == "Adjustment" and self.fuel_adjustment_id:
+            linked_docname = self.fuel_adjustment_id
+            linked_doctype = "Fuel Adjustment"
 
         if linked_docname and linked_doctype:
             # Fetch the linked document
             linked_doc = frappe.get_doc(linked_doctype, linked_docname)
 
-            # Cancel the linked document if it is not already cancelled
+            # Cancel the linked document if it is not already cancelled.
+            # No commit here: the whole cancel (this cascade, the balance
+            # reversal and the resource restore) must stay one transaction,
+            # or a failure partway leaves the ledger and balance diverged.
             if linked_doc.docstatus == 1:  # 1 indicates submitted document
                 linked_doc.cancel()
-                frappe.db.commit()  # Ensure changes are committed to the database
 
     def update_fuel_balance(self, submit=True):
         # Fetch the existing Fuel Balance for the specified fuel_tanker
@@ -68,35 +74,57 @@ class FuelEntry(Document):
                 balance_entry.balance += self.litres_supplied or 0
             elif self.utilization_type == "Dispensed":
                 balance_entry.balance -= self.litres_dispensed or 0
+            elif self.utilization_type == "Adjustment":
+                # litres_adjusted is signed, so += moves the balance either way
+                balance_entry.balance += self.litres_adjusted or 0
         else:
             # Reverse the balance adjustment if the document is being cancelled
             if self.utilization_type == "Supplied":
                 balance_entry.balance -= self.litres_supplied or 0
             elif self.utilization_type == "Dispensed":
                 balance_entry.balance += self.litres_dispensed or 0
+            elif self.utilization_type == "Adjustment":
+                balance_entry.balance -= self.litres_adjusted or 0
 
         balance_entry.save()
 
     def update_resource_usage_on_cancel(self):
+        """Restore the resource's odometer/hours after this entry is cancelled.
+
+        The reading is recomputed from the remaining submitted Fuel Used
+        documents for the resource rather than blindly restored from the
+        cancelled document, so cancelling a mid-history entry cannot drag
+        the reading backwards past later, still-submitted readings. The
+        cancelled document's previous reading is only used when no other
+        submitted Fuel Used remains.
         """
-        Update the current_hours_copy or current_odometer of the resource when Fuel Entry is cancelled.
-        """
-        linked_docname = None
+        if not (self.utilization_type == "Dispensed" and self.fuel_utilization_id):
+            return
 
-        if self.utilization_type == "Dispensed" and self.fuel_utilization_id:
-            linked_docname = self.fuel_utilization_id
+        fuel_used_doc = frappe.get_doc("Fuel Used", self.fuel_utilization_id)
+        resource = frappe.get_doc("Resource", fuel_used_doc.resource)
 
-        if linked_docname:
-            # Fetch the linked Fuel Used document
-            fuel_used_doc = frappe.get_doc("Fuel Used", linked_docname)
+        if resource.resource_type == "Truck":
+            reading_field, resource_field = "odometer_km", "current_odometer"
+            fallback = fuel_used_doc.previous_odometer_km
+        elif resource.resource_type == "Equipment":
+            reading_field, resource_field = "hours_copy", "current_hours"
+            fallback = fuel_used_doc.previous_hours_copy
+        else:
+            return
 
-            # Fetch the related resource
-            resource = frappe.get_doc("Resource", fuel_used_doc.resource)
+        remaining_readings = frappe.get_all(
+            "Fuel Used",
+            filters={
+                "resource": fuel_used_doc.resource,
+                "docstatus": 1,
+                "name": ["!=", fuel_used_doc.name],
+            },
+            pluck=reading_field,
+        )
+        remaining_readings = [flt(r) for r in remaining_readings if r is not None]
 
-            # Update the appropriate field based on the resource type
-            if fuel_used_doc.resource_type == "Truck":
-                resource.current_odometer = fuel_used_doc.previous_odometer_km
-            elif fuel_used_doc.resource_type == "Equipment":
-                resource.current_hours_copy = fuel_used_doc.previous_hours_copy
-
-            resource.save()
+        setattr(resource, resource_field, max(remaining_readings) if remaining_readings else flt(fallback))
+        # readings are locked against manual edits; fuel flows are exempt
+        resource.flags.from_fuel_transaction = True
+        resource.save()
