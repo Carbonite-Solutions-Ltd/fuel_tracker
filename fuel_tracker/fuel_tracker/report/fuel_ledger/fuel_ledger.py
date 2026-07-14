@@ -66,6 +66,8 @@ def get_data(filters):
             `tabFuel Used` fu ON fe.fuel_utilization_id = fu.name
         WHERE
             {conditions}
+        ORDER BY
+            fe.date, fe.name
         """, filters, as_dict=1)
     for row in data:
         if row["litres_supplied"]:
@@ -76,8 +78,9 @@ def get_data(filters):
 
 def get_conditions(filters):
     """Returns SQL conditions based on filters."""
-    conditions = "1=1"
-    status_map = {"Submitted": 1}  # Map string values to integers
+    # Only submitted entries belong in the ledger; drafts and cancelled
+    # entries (docstatus 0/2) must never appear.
+    conditions = "fe.docstatus = 1"
 
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"
@@ -89,15 +92,6 @@ def get_conditions(filters):
         conditions += " AND fe.site IN %(site)s"
     if filters.get("resource"):
         conditions += " AND fu.resource IN %(resource)s"
-    if filters.get("docstatus"):
-        # Map the string status to its corresponding docstatus integer
-        docstatus_value = status_map.get(filters["docstatus"], None)
-        if docstatus_value is not None:
-            filters["docstatus"] = docstatus_value  # Update the filter to use the integer value
-            conditions += " AND fe.docstatus = %(docstatus)s"
-    else:
-        # Optionally handle cases where no status is provided or an invalid status is provided
-        pass
 
     return conditions
 

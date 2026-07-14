@@ -91,6 +91,7 @@
    "label": "Current Hours"
   },
   {
+   "description": "Baseline used by the Average Fuel Consumption Ledger report. Enter litres per kilometre for Trucks and litres per hour for Equipment — not kilometres per litre.",
    "fieldname": "average_consumption",
    "fieldtype": "Float",
    "label": "Average Consumption"
