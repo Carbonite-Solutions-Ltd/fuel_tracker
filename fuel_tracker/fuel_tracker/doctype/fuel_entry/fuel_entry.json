@@ -43,7 +43,8 @@
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
    "label": "Fuel Tanker",
-   "options": "Fuel Tanker"
+   "options": "Fuel Tanker",
+   "search_index": 1
   },
   {
    "fieldname": "date",
@@ -151,7 +152,8 @@
    "fieldname": "resource",
    "fieldtype": "Link",
    "label": "Resource",
-   "options": "Resource"
+   "options": "Resource",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_fqww",

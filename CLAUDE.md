@@ -49,7 +49,7 @@ A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`
 
 `api/login.py`, `api/fuel_used.py`, and `api/dashboard.py` hold `@frappe.whitelist()` functions consumed by an **external mobile/web client** over Frappe's v2 REST API (`/api/v2/method/fuel_tracker.api.<module>.<fn>`; canonical URLs are listed in comments at the bottom of `fuel_used.py`). These read the JSON body via `frappe.request.get_data()` rather than positional args. `login.verify_login` authenticates and returns/generates the user's `api_key`/`api_secret` for subsequent calls.
 
-**Gotcha:** the `doc_events` block in `hooks.py` maps placeholder doctypes `Doctype1`..`Doctype11` to these API functions. Those doctypes do not exist, so those hooks never fire — the block is effectively dead config. The API functions are reached only through the whitelisted REST endpoints above, not through document events. Don't treat that block as live wiring.
+The app declares `required_apps = ["erpnext"]` (Fuel Tanker links to Item and drives Asset Category/Item Group creation) and ships the `Item-custom_resource_type` Custom Field as a fixture (`fuel_tracker/fixtures/custom_field.json`) — re-export with `bench --site <site> export-fixtures --app fuel_tracker` if that field's definition changes.
 
 ## Reports (`fuel_tracker/report/`)
 
