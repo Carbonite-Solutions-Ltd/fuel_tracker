@@ -18,6 +18,7 @@ def get_columns():
         {"label": _("Opening Balance"), "fieldname": "opening_balance", "fieldtype": "Float", "width": 180},
         {"label": _("Liters Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 200},
         {"label": _("Liters Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 200},
+        {"label": _("Liters Adjusted"), "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 200},
         {"label": _("Current Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 200},
     ]
     return columns
@@ -35,9 +36,11 @@ def get_data(filters):
             SUM(CASE WHEN fe.utilization_type = 'Opening Balance' THEN COALESCE(fe.current_balance, 0) ELSE 0 END) as opening_balance,
             COALESCE(SUM(fe.litres_supplied), 0) as litres_supplied,
             COALESCE(SUM(fe.litres_dispensed), 0) as litres_dispensed,
+            COALESCE(SUM(fe.litres_adjusted), 0) as litres_adjusted,
             (SUM(CASE WHEN fe.utilization_type = 'Opening Balance' THEN COALESCE(fe.current_balance, 0) ELSE 0 END)
                 + COALESCE(SUM(fe.litres_supplied), 0)
-                - COALESCE(SUM(fe.litres_dispensed), 0)) as current_balance
+                - COALESCE(SUM(fe.litres_dispensed), 0)
+                + COALESCE(SUM(fe.litres_adjusted), 0)) as current_balance
         FROM
             `tabFuel Entry` fe
         WHERE

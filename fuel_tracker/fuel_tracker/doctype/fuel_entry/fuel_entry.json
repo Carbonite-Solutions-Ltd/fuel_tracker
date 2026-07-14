@@ -18,11 +18,13 @@
   "column_break_xyye",
   "litres_supplied",
   "litres_dispensed",
+  "litres_adjusted",
   "diff_hours_copy",
   "refrence_documents_section",
   "fuel_utilization_id",
   "column_break_oszc",
   "fuel_supplied_id",
+  "fuel_adjustment_id",
   "section_break_zksg",
   "resource",
   "column_break_fqww",
@@ -90,6 +92,12 @@
    "label": "Litres Dispensed"
   },
   {
+   "depends_on": "eval:doc.utilization_type == 'Adjustment'",
+   "fieldname": "litres_adjusted",
+   "fieldtype": "Float",
+   "label": "Litres Adjusted"
+  },
+  {
    "fetch_from": "previous_balance.fuel_utilization_type",
    "fieldname": "utilization_type",
    "fieldtype": "Data",
@@ -116,6 +124,12 @@
    "fieldtype": "Link",
    "label": "Fuel Supplied ID",
    "options": "Fuel Supplied"
+  },
+  {
+   "fieldname": "fuel_adjustment_id",
+   "fieldtype": "Link",
+   "label": "Fuel Adjustment ID",
+   "options": "Fuel Adjustment"
   },
   {
    "depends_on": "eval:doc.resource_type == 'Truck'",

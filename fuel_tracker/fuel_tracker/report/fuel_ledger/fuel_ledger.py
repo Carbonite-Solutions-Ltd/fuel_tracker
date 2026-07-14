@@ -15,6 +15,7 @@ def execute(filters=None):
             "resource": None,
             "litres_supplied": sum(row.get("litres_supplied") or 0 for row in data),
             "litres_dispensed": sum(row.get("litres_dispensed") or 0 for row in data),
+            "litres_adjusted": sum(row.get("litres_adjusted") or 0 for row in data),
             "previous_balance": None,
             "current_balance": None,
             "previous_odometer_km": None,
@@ -40,6 +41,7 @@ def get_columns():
         {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 150},
         {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "width": 150},
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 150},
+        {"label": "Litres Adjusted", "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 150},
         {"label": "Previous Balance", "fieldname": "previous_balance", "fieldtype": "Float", "width": 150},
         {"label": "Current Balance", "fieldname": "current_balance", "fieldtype": "Float", "width": 150},
         {"label": "Previous Odometer", "fieldname": "previous_odometer_km", "fieldtype": "Float", "width": 150},
@@ -58,7 +60,7 @@ def get_data(filters):
     data = frappe.db.sql(f"""
         SELECT
             fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
-            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed,
+            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
             fe.previous_balance, fe.current_balance, fu.previous_odometer_km, fu.odometer_km, fe.diff_odometer, fu.previous_hours_copy, fu.hours_copy, fe.diff_hours_copy, fe.name
         FROM
             `tabFuel Entry` fe

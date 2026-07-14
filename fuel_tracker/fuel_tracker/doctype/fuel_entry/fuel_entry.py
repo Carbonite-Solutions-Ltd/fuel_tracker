@@ -24,6 +24,9 @@ class FuelEntry(Document):
         elif self.utilization_type == "Dispensed" and self.fuel_utilization_id:
             linked_docname = self.fuel_utilization_id
             linked_doctype = "Fuel Used"
+        elif self.utilization_type == "Adjustment" and self.fuel_adjustment_id:
+            linked_docname = self.fuel_adjustment_id
+            linked_doctype = "Fuel Adjustment"
 
         if linked_docname and linked_doctype:
             # Fetch the linked document
@@ -71,12 +74,17 @@ class FuelEntry(Document):
                 balance_entry.balance += self.litres_supplied or 0
             elif self.utilization_type == "Dispensed":
                 balance_entry.balance -= self.litres_dispensed or 0
+            elif self.utilization_type == "Adjustment":
+                # litres_adjusted is signed, so += moves the balance either way
+                balance_entry.balance += self.litres_adjusted or 0
         else:
             # Reverse the balance adjustment if the document is being cancelled
             if self.utilization_type == "Supplied":
                 balance_entry.balance -= self.litres_supplied or 0
             elif self.utilization_type == "Dispensed":
                 balance_entry.balance += self.litres_dispensed or 0
+            elif self.utilization_type == "Adjustment":
+                balance_entry.balance -= self.litres_adjusted or 0
 
         balance_entry.save()
 
