@@ -20,14 +20,17 @@
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "reqd": 1
   },
   {
+   "description": "Search for the tanker's Item. If no Item with this name exists, it is created automatically on save as a non-stock fixed asset (resource type Truck, asset category TRUCKS & VEHICLES).",
    "fieldname": "tanker",
    "fieldtype": "Link",
    "label": "Tanker",
    "link_filters": "[[\"Item\",\"custom_resource_type\",\"is\",\"set\"]]",
    "options": "Item",
+   "reqd": 1,
    "unique": 1
   },
   {
