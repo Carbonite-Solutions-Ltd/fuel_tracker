@@ -22,11 +22,26 @@ frappe.ui.form.on("Fuel Used", {
         // drafts stay saveable; the block applies at submit (server check
         // in fuel_used.py is authoritative and re-reads the live resource)
         if (frm.doc.resource_type === "Truck" && !flt(frm.doc.previous_odometer_km)) {
-            frappe.msgprint(__("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel.", [frm.doc.resource]));
+            missing_reading_message(frm, __("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel.", [frm.doc.resource]));
             frappe.validated = false;
         } else if (frm.doc.resource_type === "Equipment" && !flt(frm.doc.previous_hours_copy)) {
-            frappe.msgprint(__("Resource {0} has no Current Hours reading. Set it on the Resource record before dispensing fuel.", [frm.doc.resource]));
+            missing_reading_message(frm, __("Resource {0} has no Current Hours reading. Set it on the Resource record before dispensing fuel.", [frm.doc.resource]));
             frappe.validated = false;
         }
     }
 });
+
+function missing_reading_message(frm, message) {
+    frappe.msgprint({
+        title: __("Missing Resource Reading"),
+        message: message,
+        indicator: "red",
+        primary_action: {
+            label: __("Open Resource"),
+            action() {
+                frappe.hide_msgprint();
+                frappe.set_route("Form", "Resource", frm.doc.resource);
+            },
+        },
+    });
+}

@@ -125,4 +125,6 @@ class FuelEntry(Document):
         remaining_readings = [flt(r) for r in remaining_readings if r is not None]
 
         setattr(resource, resource_field, max(remaining_readings) if remaining_readings else flt(fallback))
+        # readings are locked against manual edits; fuel flows are exempt
+        resource.flags.from_fuel_transaction = True
         resource.save()

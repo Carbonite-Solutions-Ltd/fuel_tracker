@@ -46,6 +46,7 @@ class FuelUsed(Document):
                 frappe.throw(
                     _("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel.")
                     .format(frappe.bold(self.resource))
+                    + self.open_resource_button()
                 )
             # mandatory_depends_on only guards the desk form; enforce at
             # submit for API/script-created documents too
@@ -62,6 +63,7 @@ class FuelUsed(Document):
                 frappe.throw(
                     _("Resource {0} has no Current Hours reading. Set it on the Resource record before dispensing fuel.")
                     .format(frappe.bold(self.resource))
+                    + self.open_resource_button()
                 )
             if not flt(self.hours_copy):
                 frappe.throw(_("Current Hours is required to dispense fuel to equipment."))
@@ -70,6 +72,11 @@ class FuelUsed(Document):
                     _("Hours reading {0} cannot be less than the resource's current hours: {1}")
                     .format(flt(self.hours_copy), self.previous_hours_copy)
                 )
+
+    def open_resource_button(self):
+        return '<br><br><a class="btn btn-primary btn-sm" href="{0}">{1}</a>'.format(
+            frappe.utils.get_url_to_form("Resource", self.resource), _("Open Resource")
+        )
 
     def warn_if_overdrawing(self, previous_balance):
         new_balance = flt(previous_balance) - flt(self.fuel_issued_lts)
@@ -143,6 +150,8 @@ class FuelUsed(Document):
         elif self.resource_type == "Equipment":
             resource.current_hours = self.hours_copy
 
+        # readings are locked against manual edits; fuel flows are exempt
+        resource.flags.from_fuel_transaction = True
         resource.save()
         
 
