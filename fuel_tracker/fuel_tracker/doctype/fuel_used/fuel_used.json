@@ -8,8 +8,11 @@
  "field_order": [
   "section_break_un6b",
   "date",
+  "set_posting_time",
+  "posting_time",
   "resource",
   "resource_type",
+  "meter_faulty",
   "stationed_site",
   "column_break_pdgt",
   "fuel_tanker",
@@ -121,11 +124,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.resource_type=='Truck';",
+   "depends_on": "eval:doc.resource_type=='Truck' && !doc.meter_faulty;",
    "fieldname": "odometer_km",
    "fieldtype": "Float",
    "label": "Current Odometer (KM)",
-   "mandatory_depends_on": "eval:doc.resource_type=='Truck'"
+   "mandatory_depends_on": "eval:doc.resource_type=='Truck' && !doc.meter_faulty"
   },
   {
    "fieldname": "fuel_issued_lts",
@@ -134,7 +137,7 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval:doc.resource_type=='Truck';",
+   "depends_on": "eval:doc.resource_type=='Truck' && !doc.meter_faulty;",
    "fetch_from": "resource.current_odometer",
    "fieldname": "previous_odometer_km",
    "fieldtype": "Float",
@@ -142,18 +145,19 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.resource_type=='Equipment';",
+   "depends_on": "eval:doc.resource_type=='Equipment' && !doc.meter_faulty;",
    "fetch_from": "resource.current_hours",
    "fieldname": "previous_hours_copy",
    "fieldtype": "Float",
-   "label": "Previous Hours"
+   "label": "Previous Hours",
+   "read_only": 1
   },
   {
-   "depends_on": "eval:doc.resource_type=='Equipment';",
+   "depends_on": "eval:doc.resource_type=='Equipment' && !doc.meter_faulty;",
    "fieldname": "hours_copy",
    "fieldtype": "Float",
    "label": "Current Hours",
-   "mandatory_depends_on": "eval:doc.resource_type=='Equipment'"
+   "mandatory_depends_on": "eval:doc.resource_type=='Equipment' && !doc.meter_faulty"
   },
   {
    "fieldname": "requisition_number",
@@ -200,6 +204,30 @@
    "fieldname": "odometer_image",
    "fieldtype": "Attach Image",
    "label": "Odometer Image"
+  },
+  {
+   "default": "Now",
+   "description": "Ledger position within the day. Left unticked, this is stamped at submission.",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "depends_on": "eval:doc.set_posting_time"
+  },
+  {
+   "default": "0",
+   "fetch_from": "resource.has_faulty_meter",
+   "fetch_if_empty": 0,
+   "fieldname": "meter_faulty",
+   "fieldtype": "Check",
+   "label": "Meter Faulty",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Post this document at the date and time entered rather than at the moment of submission. Tick this to backdate.",
+   "fieldname": "set_posting_time",
+   "fieldtype": "Check",
+   "label": "Set Posting Time"
   }
  ],
  "index_web_pages_for_search": 1,

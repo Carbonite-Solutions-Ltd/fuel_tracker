@@ -7,6 +7,8 @@
  "field_order": [
   "section_break_main",
   "date",
+  "set_posting_time",
+  "posting_time",
   "fuel_tanker",
   "site",
   "column_break_main",
@@ -119,6 +121,21 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "Now",
+   "description": "Ledger position within the day. Left unticked, this is stamped at submission.",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "depends_on": "eval:doc.set_posting_time"
+  },
+  {
+   "default": "0",
+   "description": "Post this document at the date and time entered rather than at the moment of submission. Tick this to backdate.",
+   "fieldname": "set_posting_time",
+   "fieldtype": "Check",
+   "label": "Set Posting Time"
   }
  ],
  "index_web_pages_for_search": 1,

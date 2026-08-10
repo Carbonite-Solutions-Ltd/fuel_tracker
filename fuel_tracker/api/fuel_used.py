@@ -154,10 +154,14 @@ def get_filtered_items():
     Fetch a list of resources from the "Resource" doctype.
     """
     try:
-        # Fetch resources
+        # has_faulty_meter tells the client whether to require a reading:
+        # a resource with a broken meter is dispensed to without one.
         resources = frappe.get_list(
             "Resource",
-            fields=["name", "reg_no", "resource_type", "current_odometer", "current_hours"]
+            fields=[
+                "name", "reg_no", "resource_type", "current_odometer", "current_hours",
+                "has_faulty_meter",
+            ]
         )
 
         # Return the resources

@@ -72,7 +72,7 @@ class TestFuelAdjustment(FrappeTestCase):
 		doc = adjust(tanker, mode="Quantity", quantity=-120, reason="Theft")
 		self.assertEqual(doc.docstatus, 1)
 		msgs = messages_text()
-		self.assertIn("(negative)", msgs)
+		self.assertIn("the balance will go negative", msgs)
 		self.assertIn("minimum level", msgs)
 		self.assertEqual(balance(tanker), -20)
 

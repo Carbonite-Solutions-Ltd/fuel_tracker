@@ -77,7 +77,7 @@ class TestFuelUsed(FrappeTestCase):
 
 		self.assertEqual(doc.docstatus, 1)
 		self.assertEqual(balance(tanker), -40)
-		self.assertIn("exceeds the current balance", messages_text())
+		self.assertIn("exceeds the balance of tanker", messages_text())
 
 	def test_missing_previous_reading_blocked(self):
 		# the resource must carry an initial reading before fuel can be
@@ -125,3 +125,106 @@ class TestFuelUsed(FrappeTestCase):
 		self.assertEqual(doc.docstatus, 1)
 		self.assertEqual(balance(tanker), 50)
 		self.assertIn("minimum level", messages_text())
+
+
+class TestFuelUsedFaultyMeter(FrappeTestCase):
+	"""Dispensing to a vehicle or machine whose meter is broken."""
+
+	def test_truck_with_faulty_odometer_needs_no_reading(self):
+		tanker = make_tanker("TEST-FT-FM-1").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-FM-TRK1", "Truck", reading=1000, has_faulty_meter=1).name
+
+		doc = dispense(tanker, truck, 60)
+
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(balance(tanker), 440)
+		entry = entry_for(doc)
+		self.assertEqual(entry.litres_dispensed, 60)
+		# the flag is what marks the entry unmeasured; no distance is claimed
+		self.assertTrue(entry.meter_faulty)
+		self.assertEqual(entry.diff_odometer, 0)
+
+	def test_equipment_with_faulty_hour_meter_needs_no_reading(self):
+		tanker = make_tanker("TEST-FT-FM-2").name
+		supply(tanker, 500)
+		eq = make_resource("TEST-FT-FM-EQ1", "Equipment", reading=100, has_faulty_meter=1).name
+
+		doc = dispense(tanker, eq, 40)
+
+		self.assertEqual(doc.docstatus, 1)
+		self.assertTrue(entry_for(doc).meter_faulty)
+		self.assertEqual(entry_for(doc).diff_hours_copy, 0)
+
+	def test_faulty_meter_resource_needs_no_prior_reading_at_all(self):
+		"""A meter that never worked has no reading to start from."""
+		tanker = make_tanker("TEST-FT-FM-3").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-FM-TRK2", "Truck", reading=0, has_faulty_meter=1).name
+
+		doc = dispense(tanker, truck, 25)
+
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(balance(tanker), 475)
+
+	def test_faulty_meter_does_not_overwrite_the_resource_reading(self):
+		tanker = make_tanker("TEST-FT-FM-4").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-FM-TRK3", "Truck", reading=5000, has_faulty_meter=1).name
+
+		# a bogus reading from a broken meter must not become the new truth
+		dispense(tanker, truck, 30, odometer_km=12)
+
+		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 5000)
+
+	def test_healthy_resource_still_requires_a_reading(self):
+		tanker = make_tanker("TEST-FT-FM-5").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-FM-TRK4", "Truck", reading=1000).name
+
+		with self.assertRaises(frappe.ValidationError):
+			dispense(tanker, truck, 20)
+
+	def test_faulty_meter_dispense_is_excluded_from_consumption_alerts(self):
+		from fuel_tracker.fuel_tracker.report.average_fuel_consumption_ledger.average_fuel_consumption_ledger import (
+			execute,
+		)
+
+		tanker = make_tanker("TEST-FT-FM-6").name
+		supply(tanker, 500)
+		truck = make_resource(
+			"TEST-FT-FM-TRK5", "Truck", reading=1000, average_consumption=0.2, has_faulty_meter=1
+		).name
+
+		dispense(tanker, truck, 50)
+		dispense(tanker, truck, 60)
+
+		_columns, data = execute({"resource": truck})
+		self.assertTrue(data)
+		for row in data:
+			# without a reading there is no km to divide by; the row is
+			# flagged rather than scored as a 0 km/L outlier
+			self.assertEqual(row["alert_status"], "Meter Faulty")
+			self.assertEqual(row["consumption"], 0)
+
+	def test_repaired_meter_resumes_normal_validation(self):
+		tanker = make_tanker("TEST-FT-FM-7").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-FM-TRK6", "Truck", reading=1000, has_faulty_meter=1).name
+
+		dispense(tanker, truck, 40)
+
+		resource = frappe.get_doc("Resource", truck)
+		resource.has_faulty_meter = 0
+		resource.faulty_meter_remarks = None
+		resource.save()
+
+		# back under the usual rules: a reading is required and cannot go back
+		with self.assertRaises(frappe.ValidationError):
+			dispense(tanker, truck, 20)
+		with self.assertRaises(frappe.ValidationError):
+			dispense(tanker, truck, 20, odometer_km=900)
+
+		doc = dispense(tanker, truck, 20, odometer_km=1200)
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(entry_for(doc).diff_odometer, 200)

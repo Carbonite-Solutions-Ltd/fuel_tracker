@@ -8,6 +8,7 @@ def execute(filters=None):
     if data:
         total_row = {
             "date": None,
+            "posting_time": None,
             "site": "Total",
             "utilization_type": None,
             "fuel_tanker": None,
@@ -33,7 +34,8 @@ def execute(filters=None):
 def get_columns():
     """Returns the columns for the report."""
     columns = [
-        {"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 150},
+        {"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 110},
+        {"label": "Time", "fieldname": "posting_time", "fieldtype": "Time", "width": 90},
         {"label": "Site", "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
         {"label": "Utilization Type", "fieldname": "utilization_type", "fieldtype": "Data", "width": 150},
         {"label": "Fuel Tanker", "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
@@ -59,7 +61,7 @@ def get_data(filters):
     conditions = get_conditions(filters)
     data = frappe.db.sql(f"""
         SELECT
-            fe.date, fe.site, fe.utilization_type, fe.fuel_tanker,
+            fe.date, fe.posting_time, fe.site, fe.utilization_type, fe.fuel_tanker,
             fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
             fe.previous_balance, fe.current_balance, fu.previous_odometer_km, fu.odometer_km, fe.diff_odometer, fu.previous_hours_copy, fu.hours_copy, fe.diff_hours_copy, fe.name
         FROM
@@ -69,7 +71,7 @@ def get_data(filters):
         WHERE
             {conditions}
         ORDER BY
-            fe.date, fe.name
+            fe.posting_datetime, fe.creation
         """, filters, as_dict=1)
     for row in data:
         if row["litres_supplied"]:

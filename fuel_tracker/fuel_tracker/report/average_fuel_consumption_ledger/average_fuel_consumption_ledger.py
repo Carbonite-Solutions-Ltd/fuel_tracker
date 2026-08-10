@@ -145,6 +145,7 @@ def get_data(filters):
             fe.litres_dispensed,
             fe.average_consumption,
             fe.fuel_utilization_id,
+            fe.meter_faulty,
             fu.odometer_km as current_odometer,
             fu.hours_copy as current_hours,
             (SELECT fe2.litres_dispensed
@@ -152,15 +153,16 @@ def get_data(filters):
              WHERE fe2.resource = fe.resource
              AND fe2.utilization_type = 'Dispensed'
              AND fe2.docstatus = 1
-             AND (fe2.date < fe.date OR (fe2.date = fe.date AND fe2.name < fe.name))
-             ORDER BY fe2.date DESC, fe2.name DESC
+             AND (fe2.posting_datetime < fe.posting_datetime
+                  OR (fe2.posting_datetime = fe.posting_datetime AND fe2.creation < fe.creation))
+             ORDER BY fe2.posting_datetime DESC, fe2.creation DESC
              LIMIT 1) as prev_litres_dispensed
-        FROM `tabFuel Entry` fe 
+        FROM `tabFuel Entry` fe
         LEFT JOIN `tabFuel Used` fu ON fu.name = fe.fuel_utilization_id
         WHERE fe.utilization_type = 'Dispensed'
         AND fe.docstatus = 1
         {conditions}
-        ORDER BY fe.date DESC, fe.resource
+        ORDER BY fe.posting_datetime DESC, fe.creation DESC, fe.resource
     """.format(conditions=conditions), filters, as_dict=1)
 
     result = []
@@ -185,6 +187,15 @@ def get_data(filters):
             "reference_document": entry.fuel_utilization_id,
             "alert_status": ""
         }
+
+        if entry.meter_faulty:
+            # No reading was captured, so distance/hours are unknown. Reporting
+            # a consumption here would divide by a phantom zero diff and brand
+            # a healthy machine as a fuel thief, so the row is surfaced with
+            # its litres but explicitly excluded from the alerting.
+            row["alert_status"] = _("Meter Faulty")
+            result.append(row)
+            continue
 
         litres = entry.prev_litres_dispensed or 0
         avg_consumption = entry.average_consumption or 0

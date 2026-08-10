@@ -15,6 +15,8 @@
   "resource_type",
   "current_odometer",
   "current_hours",
+  "has_faulty_meter",
+  "faulty_meter_remarks",
   "average_consumption",
   "stationed_site",
   "section_break_mjzu",
@@ -91,10 +93,25 @@
    "label": "Current Hours"
   },
   {
-   "description": "Baseline used by the Average Fuel Consumption Ledger report. Enter litres per kilometre for Trucks and litres per hour for Equipment — not kilometres per litre.",
+   "description": "Baseline used by the Average Fuel Consumption Ledger report. Enter litres per kilometre for Trucks and litres per hour for Equipment \u2014 not kilometres per litre.",
    "fieldname": "average_consumption",
    "fieldtype": "Float",
    "label": "Average Consumption"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:['Truck', 'Equipment'].includes(doc.resource_type)",
+   "description": "The odometer or hour meter is broken. Fuel can still be dispensed to this resource without a reading, and consumption reporting will skip it until the meter is repaired.",
+   "fieldname": "has_faulty_meter",
+   "fieldtype": "Check",
+   "label": "Faulty Odometer / Hour Meter"
+  },
+  {
+   "depends_on": "eval:doc.has_faulty_meter",
+   "fieldname": "faulty_meter_remarks",
+   "fieldtype": "Small Text",
+   "label": "Faulty Meter Remarks",
+   "mandatory_depends_on": "eval:doc.has_faulty_meter"
   }
  ],
  "index_web_pages_for_search": 1,
