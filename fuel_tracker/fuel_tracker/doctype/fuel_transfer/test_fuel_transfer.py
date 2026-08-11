@@ -143,3 +143,26 @@ class TestFuelTransfer(FrappeTestCase):
 
 		self.assertEqual(by_type["Transfer Out"]["litres_dispensed"], 350)
 		self.assertEqual(by_type["Transfer In"]["litres_supplied"], 350)
+
+	def test_cancelling_a_backdated_transfer_reposts_both_ledgers(self):
+		"""Reversing a transfer that sits mid-history on both sides."""
+		source, dest = self.make_pair(10)
+		day = lambda o: add_days(today(), o)
+
+		supply(source, 1000, date=day(-10), posting_time="08:00:00")
+		supply(dest, 100, date=day(-10), posting_time="08:00:00")
+		doc = transfer(source, dest, 400, date=day(-5), posting_time="08:00:00")
+		# activity on both sides *after* the transfer, which must be re-priced
+		supply(source, 50, date=day(-2), posting_time="08:00:00")
+		supply(dest, 20, date=day(-2), posting_time="08:00:00")
+		self.assertEqual(balance(source), 650)
+		self.assertEqual(balance(dest), 520)
+
+		doc.cancel()
+
+		# both sides unwind, and the later entries re-price on top
+		self.assertEqual(len(entries_for(doc, docstatus=1)), 0)
+		self.assertEqual(balance_on(source, day(-5)), 1000)
+		self.assertEqual(balance_on(dest, day(-5)), 100)
+		self.assertEqual(balance(source), 1050)
+		self.assertEqual(balance(dest), 120)
