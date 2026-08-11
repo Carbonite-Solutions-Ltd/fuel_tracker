@@ -69,5 +69,7 @@ def repost_all_tankers():
 	for tanker in tankers:
 		repost_tanker(tanker)
 
-	frappe.db.commit()
+	# No commit here: the patch runner commits once the whole patch succeeds and
+	# rolls back if it raises. Committing mid-patch would strand a half-reposted
+	# ledger if a later tanker failed.
 	print("Reposted the fuel ledger for {0} tanker(s).".format(len(tankers)))
