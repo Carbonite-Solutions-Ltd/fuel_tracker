@@ -48,13 +48,17 @@ def backfill_posting_times():
 		"""
 	)
 
-	frappe.db.sql(
-		"""
-		UPDATE `tabFuel Entry`
-		SET posting_datetime = TIMESTAMP(date, posting_time)
-		WHERE date IS NOT NULL
-		"""
-	)
+	for doctype in ("Fuel Entry", "Fuel Used"):
+		if not frappe.db.has_column(doctype, "posting_datetime"):
+			continue
+
+		frappe.db.sql(
+			"""
+			UPDATE `tab{doctype}`
+			SET posting_datetime = TIMESTAMP(date, posting_time)
+			WHERE date IS NOT NULL
+			""".format(doctype=doctype)
+		)
 
 
 def repost_all_tankers():

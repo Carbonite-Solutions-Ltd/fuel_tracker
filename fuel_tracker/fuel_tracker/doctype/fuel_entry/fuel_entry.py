@@ -9,7 +9,9 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	get_balance_as_of,
 	repost_tanker,
 	validate_not_before_opening,
+	validate_not_future_dated,
 )
+from fuel_tracker.fuel_tracker.resource_ledger import repost_resource_readings
 
 
 class FuelEntry(Document):
@@ -26,6 +28,7 @@ class FuelEntry(Document):
 		self.set_posting_datetime()
 
 	def before_submit(self):
+		validate_not_future_dated(self.date)
 		validate_not_before_opening(self.fuel_tanker, self.posting_datetime)
 		self.set_balances()
 
@@ -97,47 +100,18 @@ class FuelEntry(Document):
 			linked_doc.cancel()
 
 	def update_resource_usage_on_cancel(self):
-		"""Restore the resource's odometer/hours after this entry is cancelled.
+		"""Repost the resource's reading sequence after this entry is cancelled.
 
-		The reading is recomputed from the remaining submitted Fuel Used
-		documents for the resource rather than blindly restored from the
-		cancelled document, so cancelling a mid-history entry cannot drag
-		the reading backwards past later, still-submitted readings. The
-		cancelled document's previous reading is only used when no other
-		submitted Fuel Used remains.
+		The cancelled document drops out of the sequence, so every fill after
+		it is measured from a new starting point and the resource falls back to
+		the newest reading that remains. Reposting handles a mid-history cancel
+		as naturally as a cancel of the latest fill, and cannot drag the
+		reading backwards past readings that are still submitted.
 		"""
 		if not (self.utilization_type == "Dispensed" and self.fuel_utilization_id):
 			return
 
-		fuel_used_doc = frappe.get_doc("Fuel Used", self.fuel_utilization_id)
-		resource = frappe.get_doc("Resource", fuel_used_doc.resource)
-
-		if resource.resource_type == "Truck":
-			reading_field, resource_field = "odometer_km", "current_odometer"
-			fallback = fuel_used_doc.previous_odometer_km
-		elif resource.resource_type == "Equipment":
-			reading_field, resource_field = "hours_copy", "current_hours"
-			fallback = fuel_used_doc.previous_hours_copy
-		else:
-			return
-
-		remaining_readings = frappe.get_all(
-			"Fuel Used",
-			filters={
-				"resource": fuel_used_doc.resource,
-				"docstatus": 1,
-				"name": ["!=", fuel_used_doc.name],
-			},
-			pluck=reading_field,
+		resource, resource_type = frappe.db.get_value(
+			"Fuel Used", self.fuel_utilization_id, ["resource", "resource_type"]
 		)
-		remaining_readings = [flt(r) for r in remaining_readings if r is not None]
-
-		if not remaining_readings and not flt(fallback):
-			# Nothing left to restore from: the resource was dispensed to with
-			# a faulty meter throughout, so there is no reading to hold.
-			return
-
-		setattr(resource, resource_field, max(remaining_readings) if remaining_readings else flt(fallback))
-		# readings are locked against manual edits; fuel flows are exempt
-		resource.flags.from_fuel_transaction = True
-		resource.save()
+		repost_resource_readings(resource, resource_type, self.posting_datetime)

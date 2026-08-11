@@ -10,6 +10,7 @@
   "date",
   "set_posting_time",
   "posting_time",
+  "posting_datetime",
   "resource",
   "resource_type",
   "meter_faulty",
@@ -228,6 +229,17 @@
    "fieldname": "set_posting_time",
    "fieldtype": "Check",
    "label": "Set Posting Time"
+  },
+  {
+   "description": "Reading-sequence sort key: date + posting time.",
+   "fieldname": "posting_datetime",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Posting Datetime",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,

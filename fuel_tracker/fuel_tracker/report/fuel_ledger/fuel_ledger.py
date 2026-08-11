@@ -57,7 +57,14 @@ def get_columns():
     return columns
 
 def get_data(filters):
-    """Fetches the data based on filters."""
+    """Fetches the data based on filters.
+
+    Ordered by tanker first, then posting moment. Previous/Current Balance are
+    a *per-tanker* running balance, so a purely chronological order across
+    several tankers would interleave unrelated balances and read as though the
+    figures jumped about. Sort on the Date column in the UI for a fleet-wide
+    chronological view.
+    """
     conditions = get_conditions(filters)
     data = frappe.db.sql(f"""
         SELECT
@@ -71,7 +78,7 @@ def get_data(filters):
         WHERE
             {conditions}
         ORDER BY
-            fe.posting_datetime, fe.creation
+            fe.fuel_tanker, fe.posting_datetime, fe.creation
         """, filters, as_dict=1)
     for row in data:
         if row["litres_supplied"]:

@@ -9,6 +9,12 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	warn_if_below_minimum,
 	warn_if_ledger_goes_negative,
 )
+from fuel_tracker.fuel_tracker.resource_ledger import (
+	get_previous_reading,
+	get_reading_fields,
+	repost_resource_readings,
+	validate_reading_fits_sequence,
+)
 
 
 class FuelUsed(Document):
@@ -20,13 +26,13 @@ class FuelUsed(Document):
 	"""
 
 	def validate(self):
-		ensure_posting_time(self)
+		self.posting_datetime = ensure_posting_time(self)
 		self.sync_meter_status()
 
 	def before_submit(self):
 		# Stamp the posting time now unless the user asked to backdate, so a
 		# draft left sitting cannot post behind entries recorded since.
-		ensure_posting_time(self, refresh=True)
+		self.posting_datetime = ensure_posting_time(self, refresh=True)
 		if self.review_status == "Incoming Report":
 			self.review_status = "Reviewed"
 		self.validate_fuel_quantity()
@@ -45,7 +51,11 @@ class FuelUsed(Document):
 		warn_if_below_minimum(self.fuel_tanker, posting_datetime, -flt(self.fuel_issued_lts))
 
 		self.create_fuel_entry()
-		self.update_resource_usage()
+		# Reposting rather than simply writing this reading back: a document
+		# slotted into the middle of the history changes the distance recorded
+		# against the fill that follows it, and must not drag the resource's
+		# current reading backwards.
+		repost_resource_readings(self.resource, self.resource_type, self.posting_datetime)
 
 	def validate_fuel_quantity(self):
 		if flt(self.fuel_issued_lts) <= 0:
@@ -72,15 +82,14 @@ class FuelUsed(Document):
 		self.meter_faulty = resource.has_faulty_meter
 
 	def sync_and_validate_resource_reading(self):
-		"""Refresh the previous reading from the Resource, then validate.
+		"""Set the previous reading from the reading sequence, then validate.
 
-		A draft (e.g. an incoming mobile report) can sit for a while before
-		it is reviewed and submitted, so the previous reading fetched when
-		the draft was created may be stale by then — another Fuel Used for
-		the same resource may have been submitted in between. The Resource's
-		stored reading is authoritative at submit time: it becomes the
-		previous reading here (so the ledger diff is measured from it), and
-		the new reading may not fall behind it.
+		The previous reading is the one recorded immediately *before* this
+		document's posting moment — not the newest reading on the `Resource`.
+		That is what lets a fill be keyed in late: a document dated last week
+		is measured from last week's reading, and the check that a reading may
+		not go backwards is made against both neighbours, so it only has to
+		sit between the fills either side of it.
 
 		A resource flagged with a faulty meter is exempt from all of it: no
 		reading is required, none is validated, and the entry is tagged so
@@ -93,38 +102,33 @@ class FuelUsed(Document):
 		if self.meter_faulty:
 			return
 
-		if self.resource_type == "Truck":
-			self.previous_odometer_km = flt(resource.current_odometer)
-			if not self.previous_odometer_km:
-				frappe.throw(
-					_("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel, or flag its meter as faulty.")
-					.format(frappe.bold(self.resource))
-					+ self.open_resource_button()
-				)
-			# mandatory_depends_on only guards the desk form; enforce at
-			# submit for API/script-created documents too
-			if not flt(self.odometer_km):
-				frappe.throw(_("Current Odometer (KM) is required to dispense fuel to a truck."))
-			if flt(self.odometer_km) < self.previous_odometer_km:
-				frappe.throw(
-					_("Odometer reading {0} km cannot be less than the resource's current reading: {1} km")
-					.format(flt(self.odometer_km), self.previous_odometer_km)
-				)
-		elif self.resource_type == "Equipment":
-			self.previous_hours_copy = flt(resource.current_hours)
-			if not self.previous_hours_copy:
-				frappe.throw(
-					_("Resource {0} has no Current Hours reading. Set it on the Resource record before dispensing fuel, or flag its meter as faulty.")
-					.format(frappe.bold(self.resource))
-					+ self.open_resource_button()
-				)
-			if not flt(self.hours_copy):
-				frappe.throw(_("Current Hours is required to dispense fuel to equipment."))
-			if flt(self.hours_copy) < self.previous_hours_copy:
-				frappe.throw(
-					_("Hours reading {0} cannot be less than the resource's current hours: {1}")
-					.format(flt(self.hours_copy), self.previous_hours_copy)
-				)
+		fields = get_reading_fields(self.resource_type)
+		if not fields:
+			return
+
+		reading_field, previous_field, _diff_field, current_field = fields
+
+		# mandatory_depends_on only guards the desk form; enforce at
+		# submit for API/script-created documents too
+		if not flt(self.get(reading_field)):
+			frappe.throw(
+				_("Current Odometer (KM) is required to dispense fuel to a truck.")
+				if self.resource_type == "Truck"
+				else _("Current Hours is required to dispense fuel to equipment.")
+			)
+
+		previous = get_previous_reading(
+			self.resource, self.resource_type, self.posting_datetime, exclude=self.name
+		)
+		if not flt(previous) and not flt(resource.get(current_field)):
+			frappe.throw(
+				_("Resource {0} has no opening reading. Set it on the Resource record before dispensing fuel, or flag its meter as faulty.")
+				.format(frappe.bold(self.resource))
+				+ self.open_resource_button()
+			)
+
+		self.set(previous_field, flt(previous))
+		validate_reading_fits_sequence(self, self.resource_type)
 
 	def open_resource_button(self):
 		return '<br><br><a class="btn btn-primary btn-sm" href="{0}">{1}</a>'.format(

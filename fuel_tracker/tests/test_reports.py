@@ -40,7 +40,7 @@ class TestReports(FrappeTestCase):
 		_, rows = fb_execute(frappe._dict({"date": today(), "fuel_tanker": [tanker]}))
 		self.assertEqual(len(rows), 1)
 		row = rows[0]
-		self.assertEqual(row["opening_balance"], 200)
+		self.assertEqual(row["opening_entry"], 200)
 		self.assertEqual(row["litres_supplied"], 120)
 		self.assertEqual(row["litres_dispensed"], 30)
 		self.assertEqual(row["litres_adjusted"], -40)

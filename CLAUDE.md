@@ -63,7 +63,17 @@ The `date` on a source document is **always** honoured, so backdating is just ch
 
 ### Resource type is a pervasive branch
 
-A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`** (tracked by `hours_copy`). This distinction branches almost everywhere: validation (reading can't go backwards), which field gets fetched/written back, and consumption math in the reports. When adding logic that touches a resource, handle both arms.
+A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`** (tracked by `hours_copy`). This distinction branches almost everywhere: validation (reading can't go backwards), which field gets fetched/written back, and consumption math in the reports. When adding logic that touches a resource, handle both arms. `resource_ledger.READING_FIELDS` maps the type to its four field names — use it rather than writing another `if Truck / elif Equipment`.
+
+### `fuel_tracker/fuel_tracker/resource_ledger.py` — readings are a ledger too
+
+Odometer/hour readings are date-aware in exactly the way balances are, and for the same reason: a `Fuel Used` used to take its previous reading from the live `Resource` (the newest reading of all), so backdating a fill was rejected as "going backwards" and its distance was measured from the wrong point.
+
+- The previous reading is the one recorded immediately *before* a document's posting moment, over submitted `Fuel Used` ordered by `(posting_datetime, creation)` — hence `Fuel Used` carries its own `posting_datetime`.
+- A reading is validated against **both** neighbours, so a document slotted into the middle only has to sit between the fills either side of it.
+- `repost_resource_readings()` rewrites each later document's `previous_*` and its entry's `diff_*`, then points `Resource` at the newest reading. Submitting and cancelling both call it.
+- `get_anchor_reading()` deliberately consults **cancelled** documents. Cancelling every fill must restore the reading the resource started at, and by then only the cancelled rows still record it — falling back to `Resource.current_odometer` would hand back the reading being unwound.
+- Resources with `has_faulty_meter` are skipped entirely: they neither supply nor consume a reading, and the gap simply spans them.
 
 ### Faulty meters
 
@@ -77,7 +87,15 @@ The app declares `required_apps = ["erpnext"]` (Fuel Tanker links to Item and dr
 
 ## Reports (`fuel_tracker/report/`)
 
-Query reports (`fuel_ledger`, `average_fuel_consumption_ledger`, `fuel_balance`) are Python `execute(filters)` functions running raw SQL that `LEFT JOIN` `tabFuel Entry` with `tabFuel Used`. They filter on `docstatus = 1` (submitted only) and read the resource-type-specific diff columns (`diff_odometer` vs `diff_hours_copy`). `average_fuel_consumption_ledger` computes per-resource consumption vs a stored `average_consumption` baseline and emits an `alert_status` (Good / Warning / High Alert) — that alerting logic is the report's main purpose.
+Python `execute(filters)` functions returning `(columns, data)`, filtering on `docstatus = 1`.
+
+- **`fuel_balance`** — one row per **tanker** for a period. Its closing figure comes from `get_balance_as_of`, the same call `Fuel Balance` is synced from, so the two cannot disagree. **Never re-derive a balance by summing litres columns** — that is what made it drift: it grouped by `(site, fuel_tanker)` (splitting any tanker whose entries carried more than one site, since the site on `Fuel Used` is keyed by hand), and it summed movements recorded *before* an `Opening Balance` entry, which the ledger deliberately discards. Each row carries a `difference` column that must always be 0; if it isn't, the ledger is damaged and the row is flagged `Check Ledger`.
+- **`fuel_ledger`** — every entry, ordered `fuel_tanker, posting_datetime, creation`. Tanker first *on purpose*: Previous/Current Balance are a per-tanker running balance, so a purely chronological order across tankers reads as though the figures jump about.
+- **`average_fuel_consumption_ledger`** — scores each fill tank-to-tank: the litres put in at the *previous* fill over the distance recorded since. `score()` returns a status naming the reason whenever a fill can't honestly be scored (`Meter Faulty`, `Check Reading` for a backwards reading, `First Fill`, `No Movement`, `No Baseline`) rather than a 0 that reads like a measurement.
+- **`resource_fuel_summary`** — one row per resource per period, deriving the consumption *observed*. Doubles as the worksheet for populating `average_consumption`, without which the alerting above has nothing to compare against.
+- **`fuel_transfer_register`** / **`fuel_supply_request_status`** — transfers are invisible *as transfers* in the balance reports (they reuse the ordinary litres columns), and outstanding requests are invisible everywhere else, since those reports only show fuel that did arrive.
+
+Litres-per-km is a small number: consumption is carried at 4 decimals, because 2 rounds a genuine truck reading away to zero and leaves the row looking unscored.
 
 ## Conventions
 

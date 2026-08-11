@@ -56,9 +56,9 @@ class TestFuelEntry(FrappeTestCase):
 		entry_for(first).cancel()
 		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1200)
 
-		# cancelling the last remaining entry falls back to its previous reading
+		# with every fill cancelled the truck is back to its opening reading
 		entry_for(second).cancel()
-		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1100)
+		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1000)
 
 	def test_direct_cancel_of_sources_blocked(self):
 		tanker = make_tanker("TEST-FT-FE-4").name

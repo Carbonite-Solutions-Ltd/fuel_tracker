@@ -28,7 +28,7 @@ consistent — including the entries that already sat after the affected date.
 
 import frappe
 from frappe import _
-from frappe.utils import flt, get_datetime, getdate, now_datetime
+from frappe.utils import flt, get_datetime, getdate, now_datetime, nowdate
 
 #: Entry types that *add* to a tanker's balance.
 INFLOW_TYPES = ("Supplied", "Transfer In")
@@ -129,7 +129,7 @@ def get_ledger_entries(fuel_tanker, from_datetime=None, exclude=None, strict=Fal
 	)
 
 
-def get_balance_as_of(fuel_tanker, posting_datetime=None, exclude=None, before_creation=None):
+def get_balance_as_of(fuel_tanker, posting_datetime=None, exclude=None, before_creation=None, strict=False):
 	"""The tanker's balance at a moment in time, read from the ledger.
 
 	This is the "previous balance" any entry posted at `posting_datetime`
@@ -141,6 +141,11 @@ def get_balance_as_of(fuel_tanker, posting_datetime=None, exclude=None, before_c
 	`(posting_datetime, creation)` rather than on the timestamp alone, which
 	is what the repost needs to seed itself from the entry *immediately*
 	before a given one — including when the two are less than a second apart.
+
+	`strict` excludes `posting_datetime` itself. Reports use it for an opening
+	balance: everything posted *before* the period starts, so an opening
+	balance entry stamped 00:00:00 on the first day falls inside the period
+	rather than behind it.
 
 	Returns 0 when the tanker has no ledger history yet, matching the lazy
 	`Fuel Balance` creation the source doctypes rely on.
@@ -160,7 +165,7 @@ def get_balance_as_of(fuel_tanker, posting_datetime=None, exclude=None, before_c
 				" OR (posting_datetime = %(posting_datetime)s AND creation < %(before_creation)s))"
 			)
 		else:
-			conditions.append("posting_datetime <= %(posting_datetime)s")
+			conditions.append("posting_datetime {0} %(posting_datetime)s".format("<" if strict else "<="))
 	if exclude:
 		conditions.append("name != %(exclude)s")
 		values["exclude"] = exclude
@@ -303,6 +308,27 @@ def validate_not_before_opening(fuel_tanker, posting_datetime):
 				frappe.format(opening, {"fieldtype": "Datetime"}),
 			),
 			title=_("Dated Before Opening Balance"),
+		)
+
+
+def validate_not_future_dated(date):
+	"""Refuse a transaction dated after today.
+
+	Every movement in this ledger records something physical that already
+	happened — fuel delivered, issued, dipped or carted between sites — so a
+	future date is a keying error, not an intention. Left through, it also
+	splits the two figures users reconcile against each other: an "as at
+	today" balance report excludes it while the `Fuel Balance` doctype, which
+	is the tail of the whole ledger, counts it.
+	"""
+	if not date:
+		return
+
+	if getdate(date) > getdate(nowdate()):
+		frappe.throw(
+			_("This transaction is dated {0}, which is in the future. Fuel movements are recorded after they happen.")
+			.format(frappe.format(getdate(date), {"fieldtype": "Date"})),
+			title=_("Future Dated"),
 		)
 
 

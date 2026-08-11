@@ -44,7 +44,8 @@ class TestBackdatedLedger(FrappeTestCase):
 		self.assertEqual(balance(tanker), 0)
 
 		frappe.clear_messages()
-		late = dispense(tanker, truck, 200, odometer_km=1600, date=day(-8), posting_time="08:00:00")
+		# the odometer that applied on day -8, which sits behind the day -1 reading
+		late = dispense(tanker, truck, 200, odometer_km=1200, date=day(-8), posting_time="08:00:00")
 
 		self.assertEqual(late.docstatus, 1)
 		# priced against the 1,000 L the tanker actually held on day -8
@@ -190,7 +191,7 @@ class TestBackdatedLedger(FrappeTestCase):
 
 		frappe.clear_messages()
 		# 300 L is affordable on day -6 (500 L on hand) but leaves -250 after day -4
-		doc = dispense(tanker, truck, 300, odometer_km=1200, date=day(-6), posting_time="08:00:00")
+		doc = dispense(tanker, truck, 300, odometer_km=1050, date=day(-6), posting_time="08:00:00")
 
 		self.assertEqual(doc.docstatus, 1)
 		self.assertIn("drives its balance negative later", messages_text())
