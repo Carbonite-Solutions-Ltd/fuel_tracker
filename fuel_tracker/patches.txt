@@ -4,5 +4,5 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
-fuel_tracker.patches.v1_0.backfill_posting_datetime
-fuel_tracker.patches.v1_0.repost_resource_readings #2026-08-11
+fuel_tracker.patches.v1_0.backfill_posting_datetime #2026-08-12
+fuel_tracker.patches.v1_0.repost_resource_readings #2026-08-12

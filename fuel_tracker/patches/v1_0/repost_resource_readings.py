@@ -18,6 +18,8 @@ the repair up.
 
 import frappe
 
+from fuel_tracker.patches.v1_0.backfill_posting_datetime import LEGACY_TIME
+
 
 def execute():
 	backfill_fuel_used_posting_datetime()
@@ -25,16 +27,22 @@ def execute():
 
 
 def backfill_fuel_used_posting_datetime():
-	"""Give Fuel Used the sort key the reading sequence is ordered by."""
+	"""Give Fuel Used the sort key the reading sequence is ordered by.
+
+	One shared posting time for legacy rows, so `creation` decides the order
+	within a date — see the note in `backfill_posting_datetime`.
+	"""
 	if not frappe.db.has_column("Fuel Used", "posting_datetime"):
 		return
 
 	frappe.db.sql(
 		"""
 		UPDATE `tabFuel Used`
-		SET posting_time = TIME(creation)
+		SET posting_time = %(legacy_time)s
 		WHERE posting_time IS NULL
-		"""
+		   OR posting_time = TIME(creation)
+		""",
+		{"legacy_time": LEGACY_TIME},
 	)
 	frappe.db.sql(
 		"""

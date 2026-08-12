@@ -24,8 +24,28 @@ def execute():
 	repost_all_tankers()
 
 
+#: Legacy rows all share one posting time so that `creation` — the second half
+#: of the ledger's sort key — decides their order.
+LEGACY_TIME = "00:00:01"
+
+
 def backfill_posting_times():
-	"""Copy the time-of-day from `creation` into `posting_time`."""
+	"""Give legacy rows a posting time that preserves the order they were keyed.
+
+	The obvious move is `TIME(creation)`, but that is wrong: it keeps the
+	time-of-day and throws the creation *date* away. Almost nothing here is
+	recorded on the day the fuel moved — 461 of 462 documents on the site this
+	was written against were keyed in days later — so two fills sharing a fuel
+	date get ordered by what time of day somebody happened to type them, not by
+	which was entered first. That invents an order the old ledger never had,
+	and where it disagrees with reality it shows up as an odometer running
+	backwards.
+
+	The old ledger ordered by `(date, creation)`: entries were appended in
+	creation order and the reports sorted on date then name. Giving every
+	legacy row the same posting time reproduces that exactly, because
+	`creation` is already the tiebreaker in the new sort key.
+	"""
 	for doctype in ("Fuel Entry", "Fuel Supplied", "Fuel Used", "Fuel Adjustment"):
 		if not frappe.db.has_column(doctype, "posting_time"):
 			continue
@@ -33,9 +53,11 @@ def backfill_posting_times():
 		frappe.db.sql(
 			"""
 			UPDATE `tab{doctype}`
-			SET posting_time = TIME(creation)
+			SET posting_time = %(legacy_time)s
 			WHERE posting_time IS NULL
-			""".format(doctype=doctype)
+			   OR posting_time = TIME(creation)
+			""".format(doctype=doctype),
+			{"legacy_time": LEGACY_TIME},
 		)
 
 	# The opening balance anchors its tanker's ledger, so it must sort ahead of
