@@ -2,12 +2,9 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Transfer", {
-	onload(frm) {
-		// Fuel movements record something that already happened, so the picker
-		// stops at today. The server refuses a future date regardless.
-		frm.set_df_property("date", "max_date", frappe.datetime.get_today());
+	date(frm) {
+		warn_if_future(frm);
 	},
-
 	setup(frm) {
 		// A transfer moves fuel between two tankers, so never offer the same
 		// one on both sides.
@@ -92,4 +89,18 @@ function refresh_balances(frm) {
 			},
 		});
 	});
+}
+
+function warn_if_future(frm) {
+	// Fuel movements record something that already happened. The server
+	// refuses a future date outright; this just says so straight away,
+	// without touching the date picker's own options.
+	if (frm.doc.date && frm.doc.date > frappe.datetime.get_today()) {
+		frappe.msgprint({
+			title: __("Future Dated"),
+			message: __("Date cannot be in the future. Fuel is recorded after it moves; backdating is allowed."),
+			indicator: "red",
+		});
+		frm.set_value("date", frappe.datetime.get_today());
+	}
 }

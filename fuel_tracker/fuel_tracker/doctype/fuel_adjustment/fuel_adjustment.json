@@ -32,7 +32,8 @@
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
-   "reqd": 1
+   "reqd": 1,
+   "default": "Today"
   },
   {
    "fieldname": "fuel_tanker",
