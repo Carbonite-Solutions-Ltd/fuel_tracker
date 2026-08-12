@@ -10,6 +10,7 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	ensure_posting_time,
 	get_balance_as_of,
 	get_or_create_fuel_balance,
+	validate_not_future_dated,
 	warn_if_above_threshold,
 	warn_if_below_minimum,
 	warn_if_ledger_goes_negative,
@@ -29,6 +30,7 @@ class FuelTransfer(Document):
 	"""
 
 	def validate(self):
+		validate_not_future_dated(self.date)
 		ensure_posting_time(self)
 		self.validate_route()
 		self.validate_quantity()

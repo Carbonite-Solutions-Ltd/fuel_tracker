@@ -2,6 +2,11 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Adjustment", {
+    onload(frm) {
+        // Fuel movements record something that already happened, so the picker
+        // stops at today. The server refuses a future date regardless.
+        frm.set_df_property("date", "max_date", frappe.datetime.get_today());
+    },
     refresh(frm) {
         fetch_system_balance(frm);
     },

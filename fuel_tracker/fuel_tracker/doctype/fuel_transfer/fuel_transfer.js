@@ -2,6 +2,12 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Transfer", {
+	onload(frm) {
+		// Fuel movements record something that already happened, so the picker
+		// stops at today. The server refuses a future date regardless.
+		frm.set_df_property("date", "max_date", frappe.datetime.get_today());
+	},
+
 	setup(frm) {
 		// A transfer moves fuel between two tankers, so never offer the same
 		// one on both sides.

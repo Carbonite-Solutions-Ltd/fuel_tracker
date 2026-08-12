@@ -2,6 +2,11 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Supplied", {
+    onload(frm) {
+        // Fuel movements record something that already happened, so the picker
+        // stops at today. The server refuses a future date regardless.
+        frm.set_df_property("date", "max_date", frappe.datetime.get_today());
+    },
 	setup(frm) {
 		// Only open requests can be answered, and only for this tanker — a
 		// supply booked against another tanker's request credits the wrong

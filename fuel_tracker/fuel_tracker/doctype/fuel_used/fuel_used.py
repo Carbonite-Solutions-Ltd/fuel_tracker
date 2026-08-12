@@ -6,6 +6,7 @@ from frappe.utils import flt
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	ensure_posting_time,
 	get_or_create_fuel_balance,
+	validate_not_future_dated,
 	warn_if_below_minimum,
 	warn_if_ledger_goes_negative,
 )
@@ -26,6 +27,7 @@ class FuelUsed(Document):
 	"""
 
 	def validate(self):
+		validate_not_future_dated(self.date)
 		self.posting_datetime = ensure_posting_time(self)
 		self.sync_meter_status()
 
