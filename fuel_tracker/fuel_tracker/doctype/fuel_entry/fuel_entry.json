@@ -7,6 +7,8 @@
  "field_order": [
   "section_break_aa4j",
   "date",
+  "posting_time",
+  "posting_datetime",
   "utilization_type",
   "column_break_nups",
   "site",
@@ -25,12 +27,14 @@
   "column_break_oszc",
   "fuel_supplied_id",
   "fuel_adjustment_id",
+  "fuel_transfer_id",
   "section_break_zksg",
   "resource",
   "column_break_fqww",
   "resource_type",
   "resource_site",
-  "average_consumption"
+  "average_consumption",
+  "meter_faulty"
  ],
  "fields": [
   {
@@ -52,6 +56,19 @@
    "label": "Date"
   },
   {
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time"
+  },
+  {
+   "description": "Ledger sort key: date + posting time. Entries are ordered by this, then by creation.",
+   "fieldname": "posting_datetime",
+   "fieldtype": "Datetime",
+   "label": "Posting Datetime",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
    "fieldname": "section_break_aa4j",
    "fieldtype": "Section Break",
    "read_only": 1
@@ -66,6 +83,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": ".balance",
    "fieldname": "previous_balance",
    "fieldtype": "Float",
@@ -76,18 +94,19 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "current_balance",
    "fieldtype": "Float",
    "label": "Current Balance"
   },
   {
-   "depends_on": "eval:doc.utilization_type == 'Supplied'",
+   "depends_on": "eval:['Supplied', 'Transfer In'].includes(doc.utilization_type)",
    "fieldname": "litres_supplied",
    "fieldtype": "Float",
    "label": "Litres Supplied"
   },
   {
-   "depends_on": "eval:doc.utilization_type == 'Dispensed'",
+   "depends_on": "eval:['Dispensed', 'Transfer Out'].includes(doc.utilization_type)",
    "fieldname": "litres_dispensed",
    "fieldtype": "Float",
    "label": "Litres Dispensed"
@@ -131,6 +150,12 @@
    "fieldtype": "Link",
    "label": "Fuel Adjustment ID",
    "options": "Fuel Adjustment"
+  },
+  {
+   "fieldname": "fuel_transfer_id",
+   "fieldtype": "Link",
+   "label": "Fuel Transfer ID",
+   "options": "Fuel Transfer"
   },
   {
    "depends_on": "eval:doc.resource_type == 'Truck'",
@@ -178,6 +203,14 @@
    "fieldname": "average_consumption",
    "fieldtype": "Float",
    "label": "Average Consumption"
+  },
+  {
+   "default": "0",
+   "description": "The resource's meter was flagged faulty, so no reading was captured. Consumption reports skip this entry.",
+   "fieldname": "meter_faulty",
+   "fieldtype": "Check",
+   "label": "Meter Faulty",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

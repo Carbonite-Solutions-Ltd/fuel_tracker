@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "FTRF-.#####",
+ "creation": "2026-08-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_main",
+  "date",
+  "set_posting_time",
+  "posting_time",
+  "column_break_main",
+  "litres_transferred",
+  "section_break_from",
+  "from_tanker",
+  "from_site",
+  "from_balance",
+  "column_break_route",
+  "to_tanker",
+  "to_site",
+  "to_balance",
+  "section_break_detail",
+  "transported_by",
+  "column_break_detail",
+  "received_by",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_main",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "default": "Now",
+   "description": "Ledger position within the day. Left unticked, this is stamped at submission.",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "depends_on": "eval:doc.set_posting_time"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "litres_transferred",
+   "fieldtype": "Float",
+   "label": "Litres Transferred",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_from",
+   "fieldtype": "Section Break",
+   "label": "Route"
+  },
+  {
+   "description": "The tanker giving up the fuel. Its balance goes down.",
+   "fieldname": "from_tanker",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From Tanker",
+   "options": "Fuel Tanker",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "from_tanker.site",
+   "fieldname": "from_site",
+   "fieldtype": "Link",
+   "label": "From Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "description": "Balance of the source tanker at this transfer's posting moment.",
+   "fieldname": "from_balance",
+   "fieldtype": "Float",
+   "label": "From Tanker Balance (L)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_route",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The tanker receiving the fuel. Its balance goes up.",
+   "fieldname": "to_tanker",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To Tanker",
+   "options": "Fuel Tanker",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "to_tanker.site",
+   "fieldname": "to_site",
+   "fieldtype": "Link",
+   "label": "To Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "description": "Balance of the destination tanker at this transfer's posting moment.",
+   "fieldname": "to_balance",
+   "fieldtype": "Float",
+   "label": "To Tanker Balance (L)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_detail",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "transported_by",
+   "fieldtype": "Data",
+   "label": "Transported By"
+  },
+  {
+   "fieldname": "column_break_detail",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Data",
+   "label": "Received By"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Fuel Transfer",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "Post this document at the date and time entered rather than at the moment of submission. Tick this to backdate.",
+   "fieldname": "set_posting_time",
+   "fieldtype": "Check",
+   "label": "Set Posting Time"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Fuel Tracker",
+ "name": "Fuel Transfer",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "from_tanker"
+}

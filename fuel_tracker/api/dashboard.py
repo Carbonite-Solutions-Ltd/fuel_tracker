@@ -1,24 +1,22 @@
-import frappe 
+import frappe
+from frappe import _
+from frappe.utils import getdate, nowdate
+
+from fuel_tracker.fuel_tracker.fuel_ledger import get_balance_as_of, make_posting_datetime
+
 
 @frappe.whitelist(allow_guest=True)
-def fuelBalance(site, fuel_tanker):
+def fuelBalance(site, fuel_tanker, date=None):
+    """Balance of a tanker at the end of `date` (today by default).
+
+    Read from the ledger rather than from the last entry that happens to
+    carry today's date: a tanker with no movement today still has a balance,
+    and entries are ordered by posting datetime, not by `modified` — reposts
+    deliberately leave `modified` alone.
+    """
     try:
-        from datetime import datetime
-        current_date = datetime.now().date()
-        
-        # Get the last Fuel Entry document for current date, filtered by site and fuel_tanker
-        balance = frappe.db.get_value("Fuel Entry", 
-            {
-                "date": current_date,
-                "site": site,
-                "fuel_tanker": fuel_tanker,
-                "docstatus": 1  # Only submitted documents
-            },
-            "current_balance",
-            order_by="modified desc"
-        )
-        
-        return balance
+        as_at = make_posting_datetime(getdate(date or nowdate()), "23:59:59.999999")
+        return get_balance_as_of(fuel_tanker, as_at)
     except Exception as e:
         frappe.log_error(message=str(e), title="Fuel Balance API Error")
         frappe.throw(_("An error occurred while fetching the Fuel Balance: {0}").format(str(e)))

@@ -31,19 +31,53 @@ CI (`.github/workflows/ci.yml`) provisions a fresh bench + MariaDB, installs the
 
 ## Architecture: the fuel ledger
 
-The domain is a **double-entry-style ledger**. Understanding the flow between five doctypes is the key to this codebase — they are wired through Frappe document lifecycle hooks (`on_submit` / `on_cancel`), not direct calls.
+The domain is a **date-aware, double-entry-style ledger** modelled on ERPNext's Stock Ledger. Understanding the flow between the doctypes is the key to this codebase — they are wired through Frappe document lifecycle hooks (`on_submit` / `on_cancel`), not direct calls.
 
-- **`Fuel Supplied`** (submittable) — fuel arriving into a tanker. On submit → creates a `Fuel Entry` with `utilization_type="Supplied"` that *adds* to the balance.
-- **`Fuel Used`** (submittable) — fuel dispensed from a tanker to a resource. On submit → refreshes the previous odometer/hours reading from the live `Resource` (drafts can go stale) and validates the new reading against it, creates a `Fuel Entry` with `utilization_type="Dispensed"` that *subtracts* from the balance, and writes the new reading back to the `Resource`.
-- **`Fuel Adjustment`** (submittable) — stock corrections (dip-count variance, spillage, theft, evaporation, data-entry fixes). Two modes: *Measured Balance* (adjustment = measured − live system balance, re-read at submit) or *Quantity* (signed litres). On submit → creates a `Fuel Entry` with `utilization_type="Adjustment"` carrying the **signed** `litres_adjusted`, which moves the balance in either direction. Zero adjustments are blocked; negative-balance and over-threshold results warn without blocking.
-- **`Fuel Entry`** — the immutable ledger line. Its own `on_submit` mutates the per-tanker `Fuel Balance`. Its `on_cancel` reverses the balance change **and cascades a cancel to the source `Fuel Supplied`/`Fuel Used` doc** (via `fuel_supplied_id` / `fuel_utilization_id`), and recomputes the resource's odometer/hours from the remaining submitted `Fuel Used` docs (falling back to the cancelled doc's previous reading only when none remain). Cancellation logic lives here, so `Fuel Entry` is the single place balance and resource state get unwound. Never `frappe.db.commit()` inside these hooks — the whole cancel must stay one transaction.
-- **`Fuel Balance`** — one running-balance row per `fuel_tanker` (autoname `field:fuel_tanker`, unique). Created lazily the first time a tanker is touched. This is current-state, not history; history is the set of `Fuel Entry` rows. On submit (`on_submit`), if the tanker has no *active* `Fuel Entry` yet (cancelled entries, `docstatus=2`, don't count), it seeds an opening entry (`utilization_type="Opening Balance"`) carrying `date`/`site`/`fuel_tanker` and the opening `balance` into `current_balance`, so the ledger starts from the entered balance. Once the tanker has a submitted `Fuel Entry`, the balance is locked: `on_cancel`/`on_trash` block cancel/delete, and the client script (`fuel_balance.js`) makes all fields read-only. Releasing it means cancelling the `Fuel Entry` first. **Do not** add a server-side guard that blocks *editing* a submitted balance — `FuelEntry.update_fuel_balance` saves this doc on every ledger change, so an edit-block would break the ledger.
+### `fuel_tracker/fuel_tracker/fuel_ledger.py` is the core
 
-Consequence: never mutate `Fuel Balance` or `Resource` readings directly. Route changes through submitting/cancelling `Fuel Supplied` or `Fuel Used` so the ledger, balance, and resource state stay consistent.
+All balance arithmetic lives in this one module; the doctype controllers only call into it. The rules it enforces:
+
+- Every `Fuel Entry` carries a **`posting_datetime`** (`date` + `posting_time`). The ledger is ordered by `(posting_datetime, creation)` — `creation` is the tiebreaker for entries posted at the same instant.
+- `get_balance_as_of(tanker, posting_datetime)` answers *"what did this tanker hold at that moment"* by reading the ledger. **Never** compute a previous balance from the live `Fuel Balance` — that is the bug this replaced, and it made backdated entries wrong.
+- `repost_tanker(tanker, from_datetime)` walks every submitted entry at or after a point and rewrites its `previous_balance`/`current_balance` so the chain stays continuous. Submitting **or** cancelling any entry reposts the tail, which is what lets a backdated document slot into the middle of history.
+- Reposts use `frappe.db.set_value(..., update_modified=False)`: these rows are submitted, and the balances are derived state, not user input. Consequently **never order ledger queries by `modified`** — it is deliberately not bumped.
+- `get_balance_as_of(..., before_creation=X)` makes the cut-off exclusive on the *full* sort key. Entries recorded moments apart share a timestamp, so a time-only cut-off silently drops the entry a repost needs to continue from.
+
+### Source documents
+
+Source documents no longer compute balances at all — they create a `Fuel Entry`, which prices itself.
+
+- **`Fuel Supply Request`** (submittable) — the authorisation that must exist before any supply. Tracks its own fulfilment (`Pending` → `Partially Supplied` → `Fully Supplied`) by rolling up submitted `Fuel Supplied` docs. Has a *Create → Fuel Supplied* mapper button.
+- **`Fuel Supplied`** (submittable) — fuel arriving into a tanker. `fuel_supply_request` is **mandatory** and must be submitted and for the same tanker. On submit → `Fuel Entry` with `utilization_type="Supplied"`.
+- **`Fuel Used`** (submittable) — fuel dispensed to a resource. On submit → refreshes the previous reading from the live `Resource`, validates it, creates a `Dispensed` entry, and writes the new reading back. All of that is **skipped when the resource has `has_faulty_meter`** set (see below).
+- **`Fuel Adjustment`** (submittable) — stock corrections. *Measured Balance* mode compares against `get_balance_as_of(posting moment)`, so a backdated dip count is measured against that day's stock. Creates an `Adjustment` entry carrying the **signed** `litres_adjusted`.
+- **`Fuel Transfer`** (submittable) — fuel moved between tankers, typically across sites. Balances live on tankers, so a site-to-site move is a tanker-to-tanker move. Produces **two** entries: `Transfer Out` (debits source, uses `litres_dispensed`) and `Transfer In` (credits destination, uses `litres_supplied`). Reusing the existing litres columns is why the reports needed no transfer-specific changes.
+- **`Fuel Entry`** — the ledger line. `on_submit` reposts forward. `on_cancel` cascades a cancel to its source document (via `fuel_supplied_id` / `fuel_utilization_id` / `fuel_adjustment_id` / `fuel_transfer_id`), reposts, and recomputes the resource's reading from the remaining submitted `Fuel Used` docs. Cancellation logic lives here, so `Fuel Entry` is the single place state gets unwound. Never `frappe.db.commit()` inside these hooks — the whole cancel must stay one transaction.
+- **`Fuel Balance`** — one row per `fuel_tanker` (autoname `field:fuel_tanker`). Pure current state: `sync_fuel_balance` simply points it at the tail of the ledger. On submit it seeds an `Opening Balance` entry at **00:00:00** of its date, which anchors the ledger — `validate_not_before_opening` then refuses any transaction dated earlier, since the opening figure already accounts for those. Once the tanker has a submitted `Fuel Entry` the balance is locked against cancel/delete.
+
+Consequence: never mutate `Fuel Balance` or `Resource` readings directly. Route changes through submitting/cancelling a source document.
+
+### Backdating and `set_posting_time`
+
+The `date` on a source document is **always** honoured, so backdating is just changing the date. `posting_time` is stamped at submission unless the user ticks **Set Posting Time**, which is the deliberate "I know exactly when this happened" path. That is what stops a draft saved at 09:00 and submitted at 17:00 from posting into the past and reposting the whole day on top of itself.
 
 ### Resource type is a pervasive branch
 
-A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`** (tracked by `hours_copy`). This distinction branches almost everywhere: validation (reading can't go backwards), which field gets fetched/written back, and consumption math in the reports. When adding logic that touches a resource, handle both arms.
+A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`** (tracked by `hours_copy`). This distinction branches almost everywhere: validation (reading can't go backwards), which field gets fetched/written back, and consumption math in the reports. When adding logic that touches a resource, handle both arms. `resource_ledger.READING_FIELDS` maps the type to its four field names — use it rather than writing another `if Truck / elif Equipment`.
+
+### `fuel_tracker/fuel_tracker/resource_ledger.py` — readings are a ledger too
+
+Odometer/hour readings are date-aware in exactly the way balances are, and for the same reason: a `Fuel Used` used to take its previous reading from the live `Resource` (the newest reading of all), so backdating a fill was rejected as "going backwards" and its distance was measured from the wrong point.
+
+- The previous reading is the one recorded immediately *before* a document's posting moment, over submitted `Fuel Used` ordered by `(posting_datetime, creation)` — hence `Fuel Used` carries its own `posting_datetime`.
+- A reading is validated against **both** neighbours, so a document slotted into the middle only has to sit between the fills either side of it.
+- `repost_resource_readings()` rewrites each later document's `previous_*` and its entry's `diff_*`, then points `Resource` at the newest reading. Submitting and cancelling both call it.
+- `get_anchor_reading()` deliberately consults **cancelled** documents. Cancelling every fill must restore the reading the resource started at, and by then only the cancelled rows still record it — falling back to `Resource.current_odometer` would hand back the reading being unwound.
+- Resources with `has_faulty_meter` are skipped entirely: they neither supply nor consume a reading, and the gap simply spans them.
+
+### Faulty meters
+
+A `Resource` with `has_faulty_meter` set can be fuelled without a reading: `Fuel Used` requires none, validates none, and writes none back. The resulting `Fuel Entry` carries `meter_faulty = 1`, and `average_fuel_consumption_ledger` reports those rows as `Meter Faulty` instead of scoring them. Float columns are **not nullable** in Frappe, so `diff_odometer`/`diff_hours_copy` read 0 on such entries — `meter_faulty` is the only reliable way to tell "travelled nothing" from "was never measured".
 
 ## REST API layer (`fuel_tracker/api/`)
 
@@ -53,7 +87,15 @@ The app declares `required_apps = ["erpnext"]` (Fuel Tanker links to Item and dr
 
 ## Reports (`fuel_tracker/report/`)
 
-Query reports (`fuel_ledger`, `average_fuel_consumption_ledger`, `fuel_balance`) are Python `execute(filters)` functions running raw SQL that `LEFT JOIN` `tabFuel Entry` with `tabFuel Used`. They filter on `docstatus = 1` (submitted only) and read the resource-type-specific diff columns (`diff_odometer` vs `diff_hours_copy`). `average_fuel_consumption_ledger` computes per-resource consumption vs a stored `average_consumption` baseline and emits an `alert_status` (Good / Warning / High Alert) — that alerting logic is the report's main purpose.
+Python `execute(filters)` functions returning `(columns, data)`, filtering on `docstatus = 1`.
+
+- **`fuel_balance`** — one row per **tanker** for a period. Its closing figure comes from `get_balance_as_of`, the same call `Fuel Balance` is synced from, so the two cannot disagree. **Never re-derive a balance by summing litres columns** — that is what made it drift: it grouped by `(site, fuel_tanker)` (splitting any tanker whose entries carried more than one site, since the site on `Fuel Used` is keyed by hand), and it summed movements recorded *before* an `Opening Balance` entry, which the ledger deliberately discards. Each row carries a `difference` column that must always be 0; if it isn't, the ledger is damaged and the row is flagged `Check Ledger`.
+- **`fuel_ledger`** — every entry, ordered `fuel_tanker, posting_datetime, creation`. Tanker first *on purpose*: Previous/Current Balance are a per-tanker running balance, so a purely chronological order across tankers reads as though the figures jump about.
+- **`average_fuel_consumption_ledger`** — scores each fill tank-to-tank: the litres put in at the *previous* fill over the distance recorded since. `score()` returns a status naming the reason whenever a fill can't honestly be scored (`Meter Faulty`, `Check Reading` for a backwards reading, `First Fill`, `No Movement`, `No Baseline`) rather than a 0 that reads like a measurement.
+- **`resource_fuel_summary`** — one row per resource per period, deriving the consumption *observed*. Doubles as the worksheet for populating `average_consumption`, without which the alerting above has nothing to compare against.
+- **`fuel_transfer_register`** / **`fuel_supply_request_status`** — transfers are invisible *as transfers* in the balance reports (they reuse the ordinary litres columns), and outstanding requests are invisible everywhere else, since those reports only show fuel that did arrive.
+
+Litres-per-km is a small number: consumption is carried at 4 decimals, because 2 rounds a genuine truck reading away to zero and leaves the row looking unscored.
 
 ## Conventions
 

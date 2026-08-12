@@ -49,17 +49,23 @@ frappe.query_reports["Average Fuel Consumption Ledger"] = {
 	"formatter": function(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
 
-		if (column.fieldname == "alert_status") {
-			if (data.alert_status == "High Alert") {
-				value = "<span style='color: white; background-color: red; padding: 2px 8px; border-radius: 3px; font-weight: bold;'>" + value + "</span>";
-			} else if (data.alert_status == "Warning") {
-				value = "<span style='color: black; background-color: orange; padding: 2px 8px; border-radius: 3px; font-weight: bold;'>" + value + "</span>";
-			} else if (data.alert_status == "Above Average") {
-				value = "<span style='color: black; background-color: yellow; padding: 2px 8px; border-radius: 3px;'>" + value + "</span>";
-			} else if (data.alert_status == "Good") {
-				value = "<span style='color: white; background-color: green; padding: 2px 8px; border-radius: 3px; font-weight: bold;'>" + value + "</span>";
-			} else if (data.alert_status == "No Baseline") {
-				value = "<span style='color: white; background-color: gray; padding: 2px 8px; border-radius: 3px;'>" + value + "</span>";
+		if (column.fieldname == "alert_status" && data.alert_status) {
+			// Scored bands carry a colour; the "cannot be scored" statuses are
+			// deliberately neutral so they read as missing data, not as a result.
+			const styles = {
+				"High Alert": "color: white; background-color: red; font-weight: bold;",
+				"Warning": "color: black; background-color: orange; font-weight: bold;",
+				"Above Average": "color: black; background-color: yellow;",
+				"Good": "color: white; background-color: green; font-weight: bold;",
+				"No Baseline": "color: white; background-color: gray;",
+				"First Fill": "color: #555; background-color: #eee;",
+				"No Movement": "color: #555; background-color: #eee;",
+				"Meter Faulty": "color: white; background-color: #6c5ce7;",
+				"Check Reading": "color: white; background-color: #d63031; font-weight: bold;",
+			};
+			const style = styles[data.alert_status];
+			if (style) {
+				value = `<span style='${style} padding: 2px 8px; border-radius: 3px;'>${value}</span>`;
 			}
 		}
 

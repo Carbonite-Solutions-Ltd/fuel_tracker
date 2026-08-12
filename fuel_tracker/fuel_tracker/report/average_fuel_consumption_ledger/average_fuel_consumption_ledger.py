@@ -3,6 +3,55 @@
 
 import frappe
 from frappe import _
+from frappe.utils import flt
+
+#: Litres per km on a truck is a small number, so two decimals would round a
+#: genuine reading away to zero and leave the row looking unscored.
+PRECISION = 4
+
+
+def score(entry, litres, distance, avg_consumption):
+    """Consumption for one fill, and the band it falls in.
+
+    Returns `(consumption, alert_status)`. Anything that cannot honestly be
+    scored gets a status naming the reason rather than a zero that reads like
+    a measurement — a blank or a 0.00 km/L is indistinguishable from a real
+    result, and that is how bad meter data hides.
+    """
+    if entry.meter_faulty:
+        # No reading was captured, so distance is unknown. Scoring this would
+        # divide by a phantom zero and brand a healthy machine a fuel thief.
+        return 0, _("Meter Faulty")
+
+    if distance < 0:
+        # The resource's reading went *down* between fills — a mis-keyed
+        # odometer, a replaced meter, or two machines sharing a record.
+        return 0, _("Check Reading")
+
+    if not litres:
+        # No earlier fill, so there is no tank-to-tank interval to measure.
+        return 0, _("First Fill")
+
+    if not distance:
+        # Measured, but the resource had not moved: consumption is undefined
+        # rather than zero.
+        return 0, _("No Movement")
+
+    consumption = flt(litres / distance, PRECISION)
+
+    if avg_consumption <= 0:
+        return consumption, _("No Baseline")
+
+    # Below the baseline means burning less than expected, which is good.
+    if consumption <= avg_consumption:
+        return consumption, _("Good")
+
+    variance_pct = ((consumption - avg_consumption) / avg_consumption) * 100
+    if variance_pct > 20:
+        return consumption, _("High Alert")
+    if variance_pct > 10:
+        return consumption, _("Warning")
+    return consumption, _("Above Average")
 
 
 def execute(filters=None):
@@ -145,6 +194,7 @@ def get_data(filters):
             fe.litres_dispensed,
             fe.average_consumption,
             fe.fuel_utilization_id,
+            fe.meter_faulty,
             fu.odometer_km as current_odometer,
             fu.hours_copy as current_hours,
             (SELECT fe2.litres_dispensed
@@ -152,15 +202,16 @@ def get_data(filters):
              WHERE fe2.resource = fe.resource
              AND fe2.utilization_type = 'Dispensed'
              AND fe2.docstatus = 1
-             AND (fe2.date < fe.date OR (fe2.date = fe.date AND fe2.name < fe.name))
-             ORDER BY fe2.date DESC, fe2.name DESC
+             AND (fe2.posting_datetime < fe.posting_datetime
+                  OR (fe2.posting_datetime = fe.posting_datetime AND fe2.creation < fe.creation))
+             ORDER BY fe2.posting_datetime DESC, fe2.creation DESC
              LIMIT 1) as prev_litres_dispensed
-        FROM `tabFuel Entry` fe 
+        FROM `tabFuel Entry` fe
         LEFT JOIN `tabFuel Used` fu ON fu.name = fe.fuel_utilization_id
         WHERE fe.utilization_type = 'Dispensed'
         AND fe.docstatus = 1
         {conditions}
-        ORDER BY fe.date DESC, fe.resource
+        ORDER BY fe.posting_datetime DESC, fe.creation DESC, fe.resource
     """.format(conditions=conditions), filters, as_dict=1)
 
     result = []
@@ -186,56 +237,20 @@ def get_data(filters):
             "alert_status": ""
         }
 
-        litres = entry.prev_litres_dispensed or 0
-        avg_consumption = entry.average_consumption or 0
+        # Consumption is measured tank-to-tank: the litres put in at the
+        # *previous* fill are what the resource burned covering the distance
+        # recorded since that fill.
+        litres = flt(entry.prev_litres_dispensed)
+        avg_consumption = flt(entry.average_consumption)
+        distance = flt(entry.diff_hours_copy if entry.resource_type == "Equipment" else entry.diff_odometer)
 
-        # Calculate consumption based on resource type
-        consumption = 0
-        if entry.resource_type == "Equipment":
-            diff_hours = entry.diff_hours_copy or 0
-            if diff_hours > 0 and litres > 0:
-                consumption = round(litres / diff_hours, 2)
-        elif entry.resource_type == "Truck":
-            diff_km = entry.diff_odometer or 0
-            if diff_km > 0 and litres > 0:
-                consumption = round(litres / diff_km, 2)
-
-        # Calculate fuel supposed to be used (average * hours/km)
-        fuel_supposed = 0
-        if avg_consumption > 0:
-            if entry.resource_type == "Equipment":
-                diff_hours = entry.diff_hours_copy or 0
-                if diff_hours > 0:
-                    fuel_supposed = round(avg_consumption * diff_hours, 2)
-            elif entry.resource_type == "Truck":
-                diff_km = entry.diff_odometer or 0
-                if diff_km > 0:
-                    fuel_supposed = round(avg_consumption * diff_km, 2)
-        row["fuel_supposed_to_be_used"] = fuel_supposed
+        consumption, alert = score(entry, litres, distance, avg_consumption)
 
         row["consumption"] = consumption
-
-        # Calculate variance (consumption - average)
-        if avg_consumption > 0:
-            row["variance"] = round(consumption - avg_consumption, 2)
-
-        # Set alert status
-        # If consumption <= average_consumption = Good (using less fuel)
-        # If consumption > average_consumption = Alert (using more fuel than expected)
-        if consumption > 0 and avg_consumption > 0:
-            if consumption <= avg_consumption:
-                row["alert_status"] = "Good"
-            else:
-                # consumption is above average - calculate how much above
-                variance_pct = ((consumption - avg_consumption) / avg_consumption) * 100
-                if variance_pct > 20:
-                    row["alert_status"] = "High Alert"
-                elif variance_pct > 10:
-                    row["alert_status"] = "Warning"
-                else:
-                    row["alert_status"] = "Above Average"
-        elif consumption > 0:
-            row["alert_status"] = "No Baseline"
+        row["alert_status"] = alert
+        if consumption and avg_consumption > 0:
+            row["variance"] = flt(consumption - avg_consumption, PRECISION)
+            row["fuel_supposed_to_be_used"] = flt(avg_consumption * distance, 2)
 
         result.append(row)
 

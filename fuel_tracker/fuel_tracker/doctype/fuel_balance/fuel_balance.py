@@ -36,6 +36,10 @@ class FuelBalance(Document):
 		is no ledger history yet, so seed a Fuel Entry that carries the opening
 		balance forward. Subsequent balances are skipped because the tanker
 		already has at least one Fuel Entry.
+
+		The entry posts at 00:00:00 on its date so that it anchors the ledger:
+		anything else recorded that same day sorts after it, and anything
+		dated earlier is refused outright (see `validate_not_before_opening`).
 		"""
 		if not self.fuel_tanker:
 			return
@@ -49,6 +53,7 @@ class FuelBalance(Document):
 		opening_entry = frappe.get_doc({
 			"doctype": "Fuel Entry",
 			"date": self.date,
+			"posting_time": "00:00:00",
 			"site": self.site,
 			"fuel_tanker": self.fuel_tanker,
 			"utilization_type": "Opening Balance",

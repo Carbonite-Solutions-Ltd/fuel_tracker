@@ -8,12 +8,16 @@
  "field_order": [
   "section_break_ma6e",
   "date",
+  "set_posting_time",
+  "posting_time",
+  "fuel_supply_request",
   "site",
   "supplier",
   "reciever",
   "column_break_pwpl",
   "fuel_tanker",
   "fuel_supplied",
+  "requested_litres",
   "amended_from"
  ],
  "fields": [
@@ -72,6 +76,37 @@
    "fieldname": "reciever",
    "fieldtype": "Data",
    "label": "Receiving Official"
+  },
+  {
+   "default": "Now",
+   "description": "Ledger position within the day. Left unticked, this is stamped at submission.",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "depends_on": "eval:doc.set_posting_time"
+  },
+  {
+   "description": "Fuel cannot be supplied without an approved request.",
+   "fieldname": "fuel_supply_request",
+   "fieldtype": "Link",
+   "label": "Fuel Supply Request",
+   "options": "Fuel Supply Request",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "fuel_supply_request.requested_litres",
+   "fieldname": "requested_litres",
+   "fieldtype": "Float",
+   "label": "Requested (LTS)",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Post this document at the date and time entered rather than at the moment of submission. Tick this to backdate.",
+   "fieldname": "set_posting_time",
+   "fieldtype": "Check",
+   "label": "Set Posting Time"
   }
  ],
  "index_web_pages_for_search": 1,
