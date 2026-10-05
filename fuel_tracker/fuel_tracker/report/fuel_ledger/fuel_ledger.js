@@ -45,6 +45,12 @@ frappe.query_reports["Fuel Ledger"] = {
                 });
             }
         },
+        {
+            "fieldname": "utilization_type",
+            "label": __("Utilization Type"),
+            "fieldtype": "Select",
+            "options": "\nOpening Balance\nSupplied\nDispensed\nMiscellaneous\nAdjustment\nTransfer In\nTransfer Out",
+        },
     ],
 
     "formatter": function(value, row, column, data, default_formatter) {

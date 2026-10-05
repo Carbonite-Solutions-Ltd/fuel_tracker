@@ -43,14 +43,14 @@ frappe.query_reports["Fuel Balance"] = {
 
         if (["litres_supplied", "transferred_in"].includes(column.fieldname) && data[column.fieldname]) {
             value = `<span style="color: green;">${value}</span>`;
-        } else if (["litres_dispensed", "transferred_out"].includes(column.fieldname) && data[column.fieldname]) {
+        } else if (["litres_dispensed", "litres_miscellaneous", "transferred_out"].includes(column.fieldname) && data[column.fieldname]) {
             value = `<span style="color: red;">${value}</span>`;
         } else if (column.fieldname === "litres_adjusted" && data.litres_adjusted) {
             value = `<span style="color: ${data.litres_adjusted > 0 ? "green" : "red"};">${value}</span>`;
         } else if (column.fieldname === "difference" && data.difference) {
             value = `<span style="color: white; background-color: red; padding: 2px 8px; border-radius: 3px; font-weight: bold;">${value}</span>`;
         } else if (column.fieldname === "status" && data.status) {
-            if (data.status === __("Check Ledger")) {
+            if (data.status === __("Check Ledger") || data.status === __("Negative")) {
                 value = `<span style="color: white; background-color: red; padding: 2px 8px; border-radius: 3px; font-weight: bold;">${value}</span>`;
             } else if (data.status === __("Low")) {
                 value = `<span style="color: black; background-color: orange; padding: 2px 8px; border-radius: 3px; font-weight: bold;">${value}</span>`;

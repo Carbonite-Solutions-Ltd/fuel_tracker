@@ -4,6 +4,13 @@
 frappe.ui.form.on("Fuel Adjustment", {
     date(frm) {
         warn_if_future(frm);
+        fetch_system_balance(frm);
+    },
+    posting_time(frm) {
+        fetch_system_balance(frm);
+    },
+    set_posting_time(frm) {
+        fetch_system_balance(frm);
     },
     refresh(frm) {
         fetch_system_balance(frm);
@@ -35,17 +42,28 @@ frappe.ui.form.on("Fuel Adjustment", {
 });
 
 function fetch_system_balance(frm) {
-    // Preview only: the server re-reads the live balance at submit time.
+    // Preview only: the server re-reads the balance at submit time.
     // Submitted documents keep their stamped audit value.
     if (frm.doc.docstatus > 0) return;
-    if (!frm.doc.fuel_tanker) {
+    if (!frm.doc.fuel_tanker || !frm.doc.date) {
         frm.set_value("system_balance", 0);
         return;
     }
-    // Fuel Balance is autonamed field:fuel_tanker, so the docname is the tanker
-    frappe.db.get_value("Fuel Balance", frm.doc.fuel_tanker, "balance").then((r) => {
-        frm.set_value("system_balance", flt(r.message && r.message.balance));
-        compute_preview(frm);
+    // The balance on the adjustment's own date and time, as the server
+    // measures it — not today's live Fuel Balance, which would refuse a
+    // backdated dip count as "nothing to adjust" or preview the wrong figure.
+    frappe.call({
+        method: "fuel_tracker.fuel_tracker.fuel_ledger.get_tanker_balance_on",
+        args: {
+            fuel_tanker: frm.doc.fuel_tanker,
+            date: frm.doc.date,
+            // unticked, the server stamps the time of submission onto the date
+            posting_time: frm.doc.set_posting_time ? frm.doc.posting_time : frappe.datetime.now_time(),
+        },
+        callback(r) {
+            frm.set_value("system_balance", flt(r.message));
+            compute_preview(frm);
+        },
     });
 }
 

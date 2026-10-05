@@ -2,12 +2,17 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Used", {
-    date(frm) {
-        warn_if_future(frm);
-    },
     refresh(frm) {
-        show_faulty_meter_notice(frm);
+        show_entry_notice(frm);
         show_balance_on_date(frm);
+    },
+    entry_type(frm) {
+        // A miscellaneous issue fuels no resource, so drop any that was
+        // picked (and the readings fetched with it) before the switch
+        if (is_miscellaneous(frm)) {
+            clear_resource(frm);
+        }
+        show_entry_notice(frm);
     },
     resource(frm) {
         // meter_faulty is fetched from the resource; refresh the notice once
@@ -18,28 +23,17 @@ frappe.ui.form.on("Fuel Used", {
         show_balance_on_date(frm);
     },
     date(frm) {
+        warn_if_future(frm);
         show_balance_on_date(frm);
     },
-    validate(frm) {
-        // A faulty meter yields no trustworthy reading, so nothing to compare
-        if (frm.doc.meter_faulty) return;
-
-        if (frm.doc.resource_type === "Truck") {
-            if (frm.doc.odometer_km < frm.doc.previous_odometer_km) {
-                frappe.msgprint(__("Odometer reading cannot be less than the previous reading: {0} km", [frm.doc.previous_odometer_km]));
-                frappe.validated = false;
-            }
-        } else if (frm.doc.resource_type === "Equipment") {
-            if (frm.doc.hours_copy < frm.doc.previous_hours_copy) {
-                frappe.msgprint(__("Hours reading cannot be less than the previous hours: {0}", [frm.doc.previous_hours_copy]));
-                frappe.validated = false;
-            }
-        }
-    },
+    // No client-side "reading went backwards" check: the previous reading
+    // shown here is the resource's newest one, so comparing against it would
+    // refuse a legitimately backdated fill. The server checks the reading
+    // against the fills either side of the posting moment and names them.
     before_submit(frm) {
         // drafts stay saveable; the block applies at submit (server check
         // in fuel_used.py is authoritative and re-reads the live resource)
-        if (frm.doc.meter_faulty) return;
+        if (is_miscellaneous(frm) || frm.doc.meter_faulty) return;
 
         if (frm.doc.resource_type === "Truck" && !flt(frm.doc.previous_odometer_km)) {
             missing_reading_message(frm, __("Resource {0} has no Current Odometer reading. Set it on the Resource record before dispensing fuel, or flag its meter as faulty.", [frm.doc.resource]));
@@ -51,8 +45,35 @@ frappe.ui.form.on("Fuel Used", {
     }
 });
 
-function show_faulty_meter_notice(frm) {
+const RESOURCE_FIELDS = [
+    "resource", "resource_type", "meter_faulty", "stationed_site", "reg_no", "make", "type", "model",
+    "previous_odometer_km", "odometer_km", "previous_hours_copy", "hours_copy",
+];
+
+function is_miscellaneous(frm) {
+    return frm.doc.entry_type === "Miscellaneous";
+}
+
+function clear_resource(frm) {
+    // mirrors clear_resource() in fuel_used.py, which is authoritative
+    const values = {};
+    RESOURCE_FIELDS.forEach((fieldname) => {
+        if (frm.doc[fieldname]) values[fieldname] = null;
+    });
+    if (Object.keys(values).length) frm.set_value(values);
+}
+
+function show_entry_notice(frm) {
     frm.dashboard.clear_headline();
+
+    if (is_miscellaneous(frm)) {
+        frm.dashboard.set_headline(
+            __("Miscellaneous issue: fuel given out for site use rather than to a vehicle or machine. It reduces the tanker balance but is excluded from consumption reporting."),
+            "blue"
+        );
+        return;
+    }
+
     if (!frm.doc.meter_faulty) return;
 
     const label = frm.doc.resource_type === "Equipment" ? __("hour meter") : __("odometer");

@@ -5,7 +5,16 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import today
 
-from fuel_tracker.tests.utils import balance, dispense, entry_for, make_resource, make_tanker, messages_text, supply
+from fuel_tracker.tests.utils import (
+	balance,
+	dispense,
+	entry_for,
+	issue_miscellaneous,
+	make_resource,
+	make_tanker,
+	messages_text,
+	supply,
+)
 
 test_ignore = ["Item", "Company"]
 
@@ -228,3 +237,100 @@ class TestFuelUsedFaultyMeter(FrappeTestCase):
 		doc = dispense(tanker, truck, 20, odometer_km=1200)
 		self.assertEqual(doc.docstatus, 1)
 		self.assertEqual(entry_for(doc).diff_odometer, 200)
+
+
+class TestFuelUsedMiscellaneous(FrappeTestCase):
+	"""Fuel issued for site use — cleaning tools and the like — with no resource."""
+
+	def test_miscellaneous_issue_needs_no_resource(self):
+		tanker = make_tanker("TEST-FT-MI-1").name
+		supply(tanker, 500)
+
+		doc = issue_miscellaneous(tanker, 20, description="Washing down the mixer after the pour")
+
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(balance(tanker), 480)
+		entry = entry_for(doc)
+		self.assertEqual(entry.utilization_type, "Miscellaneous")
+		self.assertEqual(entry.litres_dispensed, 20)
+		self.assertFalse(entry.resource)
+
+	def test_miscellaneous_requires_a_description(self):
+		tanker = make_tanker("TEST-FT-MI-2").name
+		supply(tanker, 500)
+
+		with self.assertRaises(frappe.MandatoryError):
+			issue_miscellaneous(tanker, 20, description=None)
+		with self.assertRaises(frappe.MandatoryError):
+			issue_miscellaneous(tanker, 20, description="   ")
+
+	def test_normal_entry_still_requires_a_resource(self):
+		tanker = make_tanker("TEST-FT-MI-3").name
+		site = frappe.db.get_value("Fuel Tanker", tanker, "site")
+
+		with self.assertRaises(frappe.MandatoryError):
+			frappe.get_doc({
+				"doctype": "Fuel Used", "date": today(), "fuel_tanker": tanker,
+				"site": site, "fuel_issued_lts": 10,
+			}).insert()
+
+	def test_entry_type_defaults_to_normal(self):
+		tanker = make_tanker("TEST-FT-MI-4").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-MI-TRK4", "Truck", reading=1000).name
+
+		doc = dispense(tanker, truck, 30, odometer_km=1100)
+
+		self.assertEqual(doc.entry_type, "Normal")
+		self.assertEqual(entry_for(doc).utilization_type, "Dispensed")
+
+	def test_resource_picked_before_switching_is_dropped(self):
+		"""Switching to Miscellaneous must not leave a stale resource behind."""
+		tanker = make_tanker("TEST-FT-MI-5").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-MI-TRK5", "Truck", reading=1000).name
+
+		doc = issue_miscellaneous(tanker, 15, resource=truck, odometer_km=5000)
+
+		self.assertFalse(doc.resource)
+		self.assertFalse(doc.odometer_km)
+		self.assertFalse(entry_for(doc).resource)
+		# the reading typed against it must not become the truck's reading
+		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1000)
+
+	def test_miscellaneous_issue_leaves_the_reading_sequence_alone(self):
+		tanker = make_tanker("TEST-FT-MI-6").name
+		supply(tanker, 500)
+		truck = make_resource("TEST-FT-MI-TRK6", "Truck", reading=1000).name
+
+		dispense(tanker, truck, 40, odometer_km=1100)
+		issue_miscellaneous(tanker, 10)
+		second = dispense(tanker, truck, 30, odometer_km=1250)
+
+		self.assertEqual(entry_for(second).diff_odometer, 150)
+		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1250)
+		self.assertEqual(balance(tanker), 420)
+
+	def test_cancelling_the_entry_cancels_the_issue_and_restores_the_balance(self):
+		tanker = make_tanker("TEST-FT-MI-7").name
+		supply(tanker, 500)
+
+		doc = issue_miscellaneous(tanker, 25)
+		self.assertEqual(balance(tanker), 475)
+
+		entry_for(doc).cancel()
+
+		self.assertEqual(balance(tanker), 500)
+		self.assertEqual(frappe.db.get_value("Fuel Used", doc.name, "docstatus"), 2)
+
+	def test_backdated_miscellaneous_issue_reposts_later_balances(self):
+		from frappe.utils import add_days
+
+		tanker = make_tanker("TEST-FT-MI-8").name
+		supply(tanker, 500, date=add_days(today(), -5), posting_time="08:00:00")
+		later = supply(tanker, 100, date=add_days(today(), -1), posting_time="08:00:00")
+
+		issue_miscellaneous(tanker, 50, date=add_days(today(), -3), posting_time="08:00:00")
+
+		self.assertEqual(entry_for(later).previous_balance, 450)
+		self.assertEqual(balance(tanker), 550)

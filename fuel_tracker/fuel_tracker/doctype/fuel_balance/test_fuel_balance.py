@@ -77,3 +77,19 @@ class TestFuelBalance(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			frappe.delete_doc("Fuel Balance", tanker)
+
+	def test_opening_figure_typed_after_movements_is_refused_not_lost(self):
+		"""It used to be dropped without a word, leaving the tanker short."""
+		tanker = make_tanker("TEST-FT-FB-5").name
+		supply(tanker, 100)  # lazily creates the draft balance, tracking the ledger
+
+		doc = frappe.get_doc("Fuel Balance", tanker)
+		doc.balance = 5000
+
+		# refused on save too, or the row would show 5000 against a ledger of 100
+		with self.assertRaisesRegex(frappe.ValidationError, "cannot be applied as its opening balance"):
+			doc.save()
+		with self.assertRaisesRegex(frappe.ValidationError, "cannot be applied as its opening balance"):
+			frappe.get_doc("Fuel Balance", tanker).update({"balance": 5000}).submit()
+		self.assertEqual(len(opening_entries(tanker)), 0)
+		self.assertEqual(balance(tanker), 100)

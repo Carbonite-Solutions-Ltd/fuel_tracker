@@ -20,16 +20,17 @@ Balances belong to a tanker, so rows are per tanker and the site shown is the
 tanker's own. The period columns then reconcile exactly:
 
     opening + supplied + transferred in
-            - dispensed - transferred out
+            - dispensed - miscellaneous - transferred out
             + adjusted + opening entries = closing
 """
 
 import frappe
 from frappe import _
-from frappe.utils import flt, nowdate
+from frappe.utils import flt, getdate, nowdate
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	INFLOW_TYPES,
+	MISCELLANEOUS_TYPE,
 	OPENING_TYPE,
 	OUTFLOW_TYPES,
 	PRECISION,
@@ -44,6 +45,10 @@ def execute(filters=None):
 	# `date` is the filter this report used to carry; keep honouring it so
 	# saved filters and any existing links do not break.
 	to_date = filters.get("to_date") or filters.get("date") or nowdate()
+	if filters.get("from_date") and getdate(filters.get("from_date")) > getdate(to_date):
+		# An inverted window has no movements but still has an opening and a
+		# closing, so every tanker would fail to reconcile and read "Check Ledger".
+		frappe.throw(_("From Date cannot be after To Date."))
 	to_datetime = make_posting_datetime(to_date, "23:59:59.999999")
 	from_datetime = (
 		make_posting_datetime(filters.get("from_date"), "00:00:00")
@@ -76,6 +81,7 @@ def execute(filters=None):
 			"litres_supplied": flt(moves.get("supplied"), PRECISION),
 			"transferred_in": flt(moves.get("transferred_in"), PRECISION),
 			"litres_dispensed": flt(moves.get("dispensed"), PRECISION),
+			"litres_miscellaneous": flt(moves.get("miscellaneous"), PRECISION),
 			"transferred_out": flt(moves.get("transferred_out"), PRECISION),
 			"litres_adjusted": flt(moves.get("adjusted"), PRECISION),
 			"opening_entry": flt(resets.get(tanker), PRECISION),
@@ -88,7 +94,7 @@ def execute(filters=None):
 		expected = flt(
 			row["opening_balance"]
 			+ row["litres_supplied"] + row["transferred_in"]
-			- row["litres_dispensed"] - row["transferred_out"]
+			- row["litres_dispensed"] - row["litres_miscellaneous"] - row["transferred_out"]
 			+ row["litres_adjusted"] + row["opening_entry"],
 			PRECISION,
 		)
@@ -104,6 +110,10 @@ def execute(filters=None):
 def get_status(row):
 	if row["difference"]:
 		return _("Check Ledger")
+	if row["current_balance"] < 0:
+		# More fuel recorded going out than coming in — a missing supply or
+		# opening balance, or a mis-keyed issue. Never "OK", minimum or not.
+		return _("Negative")
 	if row["minimum_level"] and row["current_balance"] < row["minimum_level"]:
 		return _("Low")
 	return _("OK")
@@ -149,10 +159,12 @@ def get_movements(tankers, from_datetime, to_datetime):
 
 	Transfers are split out from ordinary supplies and dispenses: they reuse
 	the same litres columns in the ledger, but on a balance report it matters
-	whether fuel was bought in or moved from another tanker.
+	whether fuel was bought in or moved from another tanker. Miscellaneous
+	issues are split out for the same reason — fuel that went into a vehicle
+	and fuel used around the site are different questions for whoever reads it.
 	"""
 	conditions = ["fe.docstatus = 1", "fe.fuel_tanker IN %(tankers)s", "fe.posting_datetime <= %(to_datetime)s"]
-	values = {"tankers": tuple(tankers), "to_datetime": to_datetime}
+	values = {"tankers": tuple(tankers), "to_datetime": to_datetime, "miscellaneous": MISCELLANEOUS_TYPE}
 
 	if from_datetime:
 		conditions.append("fe.posting_datetime >= %(from_datetime)s")
@@ -165,6 +177,7 @@ def get_movements(tankers, from_datetime, to_datetime):
 			SUM(CASE WHEN fe.utilization_type = 'Supplied' THEN fe.litres_supplied ELSE 0 END) AS supplied,
 			SUM(CASE WHEN fe.utilization_type = 'Transfer In' THEN fe.litres_supplied ELSE 0 END) AS transferred_in,
 			SUM(CASE WHEN fe.utilization_type = 'Dispensed' THEN fe.litres_dispensed ELSE 0 END) AS dispensed,
+			SUM(CASE WHEN fe.utilization_type = %(miscellaneous)s THEN fe.litres_dispensed ELSE 0 END) AS miscellaneous,
 			SUM(CASE WHEN fe.utilization_type = 'Transfer Out' THEN fe.litres_dispensed ELSE 0 END) AS transferred_out,
 			SUM(CASE WHEN fe.utilization_type = 'Adjustment' THEN fe.litres_adjusted ELSE 0 END) AS adjusted
 		FROM `tabFuel Entry` fe
@@ -240,6 +253,7 @@ def get_columns(data=None):
 		{"label": _("Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 120},
 		{"label": _("Transferred In"), "fieldname": "transferred_in", "fieldtype": "Float", "width": 130},
 		{"label": _("Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 120},
+		{"label": _("Miscellaneous"), "fieldname": "litres_miscellaneous", "fieldtype": "Float", "width": 130},
 		{"label": _("Transferred Out"), "fieldname": "transferred_out", "fieldtype": "Float", "width": 140},
 		{"label": _("Adjusted"), "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 120},
 	]

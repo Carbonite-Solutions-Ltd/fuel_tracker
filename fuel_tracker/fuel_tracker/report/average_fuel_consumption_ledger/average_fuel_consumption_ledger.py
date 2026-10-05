@@ -1,63 +1,24 @@
 # Copyright (c) 2026, Carbonite Solutions Ltd and contributors
 # For license information, please see license.txt
 
+"""Every fill, scored tank-to-tank against the resource's baseline.
+
+The scoring itself lives in `fuel_tracker.consumption`, shared with the
+Resource Fuel Summary so the two can never disagree. This report shows it
+fill by fill: the litres put in since the previous metered fill over the
+distance recorded since, and the band that figure falls in.
+"""
+
 import frappe
 from frappe import _
 from frappe.utils import flt
 
-#: Litres per km on a truck is a small number, so two decimals would round a
-#: genuine reading away to zero and leave the row looking unscored.
-PRECISION = 4
-
-
-def score(entry, litres, distance, avg_consumption):
-    """Consumption for one fill, and the band it falls in.
-
-    Returns `(consumption, alert_status)`. Anything that cannot honestly be
-    scored gets a status naming the reason rather than a zero that reads like
-    a measurement — a blank or a 0.00 km/L is indistinguishable from a real
-    result, and that is how bad meter data hides.
-    """
-    if entry.meter_faulty:
-        # No reading was captured, so distance is unknown. Scoring this would
-        # divide by a phantom zero and brand a healthy machine a fuel thief.
-        return 0, _("Meter Faulty")
-
-    if distance < 0:
-        # The resource's reading went *down* between fills — a mis-keyed
-        # odometer, a replaced meter, or two machines sharing a record.
-        return 0, _("Check Reading")
-
-    if not litres:
-        # No earlier fill, so there is no tank-to-tank interval to measure.
-        return 0, _("First Fill")
-
-    if not distance:
-        # Measured, but the resource had not moved: consumption is undefined
-        # rather than zero.
-        return 0, _("No Movement")
-
-    consumption = flt(litres / distance, PRECISION)
-
-    if avg_consumption <= 0:
-        return consumption, _("No Baseline")
-
-    # Below the baseline means burning less than expected, which is good.
-    if consumption <= avg_consumption:
-        return consumption, _("Good")
-
-    variance_pct = ((consumption - avg_consumption) / avg_consumption) * 100
-    if variance_pct > 20:
-        return consumption, _("High Alert")
-    if variance_pct > 10:
-        return consumption, _("Warning")
-    return consumption, _("Above Average")
+from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, get_fills, in_period
 
 
 def execute(filters=None):
-    columns = get_columns()
-    data = get_data(filters)
-    return columns, data
+    filters = frappe._dict(filters or {})
+    return get_columns(), get_data(filters)
 
 
 def get_columns():
@@ -178,104 +139,57 @@ def get_columns():
 
 
 def get_data(filters):
-    conditions = get_conditions(filters)
-
-    entries = frappe.db.sql("""
-        SELECT
-            fe.name,
-            fe.date,
-            fe.resource,
-            fe.resource_type,
-            fe.site,
-            fe.fuel_tanker,
-            fe.utilization_type,
-            fe.diff_hours_copy,
-            fe.diff_odometer,
-            fe.litres_dispensed,
-            fe.average_consumption,
-            fe.fuel_utilization_id,
-            fe.meter_faulty,
-            fu.odometer_km as current_odometer,
-            fu.hours_copy as current_hours,
-            (SELECT fe2.litres_dispensed
-             FROM `tabFuel Entry` fe2
-             WHERE fe2.resource = fe.resource
-             AND fe2.utilization_type = 'Dispensed'
-             AND fe2.docstatus = 1
-             AND (fe2.posting_datetime < fe.posting_datetime
-                  OR (fe2.posting_datetime = fe.posting_datetime AND fe2.creation < fe.creation))
-             ORDER BY fe2.posting_datetime DESC, fe2.creation DESC
-             LIMIT 1) as prev_litres_dispensed
-        FROM `tabFuel Entry` fe
-        LEFT JOIN `tabFuel Used` fu ON fu.name = fe.fuel_utilization_id
-        WHERE fe.utilization_type = 'Dispensed'
-        AND fe.docstatus = 1
-        {conditions}
-        ORDER BY fe.posting_datetime DESC, fe.creation DESC, fe.resource
-    """.format(conditions=conditions), filters, as_dict=1)
+    # The walk needs each resource's whole history up to the end of the
+    # period — the first fill in the window is scored with fuel put in
+    # before it — so only resource-level filters narrow the query; the
+    # period, site and tanker filters pick which scored fills are shown.
+    fills = get_fills(
+        resource=filters.get("resource"),
+        resource_type=filters.get("resource_type"),
+        to_date=filters.get("to_date"),
+    )
+    sites = set(as_list(filters.get("site"))) if filters.get("site") else None
+    tankers = set(as_list(filters.get("fuel_tanker"))) if filters.get("fuel_tanker") else None
 
     result = []
-    for entry in entries:
+    for fill in fills:
+        if not in_period(fill, filters.get("from_date"), filters.get("to_date")):
+            continue
+        if sites and fill.site not in sites:
+            continue
+        if tankers and fill.fuel_tanker not in tankers:
+            continue
+
+        baseline = flt(fill.average_consumption)
         row = {
-            "date": entry.date,
-            "resource": entry.resource,
-            "resource_type": entry.resource_type,
-            "site": entry.site,
-            "fuel_tanker": entry.fuel_tanker,
-            "utilization_type": entry.utilization_type,
-            "current_hours": entry.current_hours or 0,
-            "diff_hours": entry.diff_hours_copy or 0,
-            "previous_odometer": (entry.current_odometer or 0) - (entry.diff_odometer or 0),
-            "current_odometer": entry.current_odometer or 0,
-            "kilometers": entry.diff_odometer or 0,
-            "litres_dispensed": entry.prev_litres_dispensed or 0,
+            "date": fill.date,
+            "resource": fill.resource,
+            "resource_type": fill.resource_type,
+            "site": fill.site,
+            "fuel_tanker": fill.fuel_tanker,
+            "utilization_type": fill.utilization_type,
+            "current_hours": flt(fill.hours_copy),
+            "diff_hours": flt(fill.diff_hours_copy),
+            "previous_odometer": flt(fill.odometer_km) - flt(fill.diff_odometer),
+            "current_odometer": flt(fill.odometer_km),
+            "kilometers": flt(fill.diff_odometer),
+            "litres_dispensed": flt(fill.litres),
             "fuel_supposed_to_be_used": 0,
-            "consumption": 0,
-            "average_consumption": entry.average_consumption or 0,
+            "consumption": fill.consumption,
+            # the live baseline, so one set after the fact applies to history
+            "average_consumption": baseline,
             "variance": 0,
-            "reference_document": entry.fuel_utilization_id,
-            "alert_status": ""
+            "reference_document": fill.fuel_utilization_id,
+            "alert_status": fill.status,
+            "posting_datetime": fill.posting_datetime,
+            "creation": fill.creation,
         }
 
-        # Consumption is measured tank-to-tank: the litres put in at the
-        # *previous* fill are what the resource burned covering the distance
-        # recorded since that fill.
-        litres = flt(entry.prev_litres_dispensed)
-        avg_consumption = flt(entry.average_consumption)
-        distance = flt(entry.diff_hours_copy if entry.resource_type == "Equipment" else entry.diff_odometer)
-
-        consumption, alert = score(entry, litres, distance, avg_consumption)
-
-        row["consumption"] = consumption
-        row["alert_status"] = alert
-        if consumption and avg_consumption > 0:
-            row["variance"] = flt(consumption - avg_consumption, PRECISION)
-            row["fuel_supposed_to_be_used"] = flt(avg_consumption * distance, 2)
+        if fill.scored and baseline > 0:
+            row["variance"] = flt(fill.consumption - baseline, PRECISION)
+            row["fuel_supposed_to_be_used"] = flt(baseline * fill.distance, 2)
 
         result.append(row)
 
+    result.sort(key=lambda r: (r["posting_datetime"], r["creation"]), reverse=True)
     return result
-
-
-def get_conditions(filters):
-    conditions = ""
-
-    if filters.get("from_date"):
-        conditions += " AND fe.date >= %(from_date)s"
-
-    if filters.get("to_date"):
-        conditions += " AND fe.date <= %(to_date)s"
-
-    if filters.get("resource"):
-        conditions += " AND fe.resource = %(resource)s"
-
-    if filters.get("resource_type"):
-        conditions += " AND fe.resource_type = %(resource_type)s"
-
-    if filters.get("site"):
-        conditions += " AND fe.site = %(site)s"
-
-    if filters.get("fuel_tanker"):
-        conditions += " AND fe.fuel_tanker = %(fuel_tanker)s"
-
-    return conditions

@@ -19,13 +19,11 @@
    "fieldtype": "Section Break"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "As @"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "balance",
    "fieldtype": "Float",
    "label": "Balance"
@@ -35,14 +33,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "fuel_tanker",
    "fieldtype": "Link",
    "label": "Fuel Tanker",
@@ -63,7 +59,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-19 14:29:45.380362",
+ "modified": "2026-10-05 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Balance",

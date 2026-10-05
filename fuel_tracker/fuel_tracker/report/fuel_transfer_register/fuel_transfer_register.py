@@ -39,7 +39,8 @@ def get_columns():
 
 
 def get_data(filters):
-	conditions = ["ft.docstatus < 2"] if filters.get("include_cancelled") else ["ft.docstatus = 1"]
+	# drafts never belong here: they moved no fuel and are not yet a transfer
+	conditions = ["ft.docstatus IN (1, 2)"] if filters.get("include_cancelled") else ["ft.docstatus = 1"]
 	values = {}
 
 	if filters.get("from_date"):
