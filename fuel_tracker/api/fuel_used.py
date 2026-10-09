@@ -33,9 +33,13 @@ def fuel_used():
 
         frappe.logger().info(f"odometer_image present: {bool(odometer_image)}, decoded size: {len(image_data) if image_data else 0}")
 
-        # Create a new document using the correct fieldnames
+        # Create a new document using the correct fieldnames.
+        # entry_type is optional so older clients keep posting normal entries;
+        # a "Miscellaneous" entry needs no resource but must carry a description.
         doc = frappe.get_doc({
             "doctype": "Fuel Used",
+            "entry_type": data.get("entry_type") or "Normal",
+            "description": data.get("description"),
             "date": data.get("date"),
             "fuel_tanker": data.get("fuel_tanker"),
             "resource": data.get("resource"),
@@ -213,9 +217,11 @@ def get_fuel_used_document(docname):
         if not docname:
             frappe.throw(_("Document name is required"))
         
-        # Get the document with all fields
+        # Get the document with all fields. get_doc does not check
+        # permissions, and names are sequential, so check explicitly.
         doc = frappe.get_doc("Fuel Used", docname)
-        
+        doc.check_permission("read")
+
         return {
             "status": "success",
             "data": doc.as_dict()
@@ -241,7 +247,7 @@ def get_user_fuel_used_documents():
         # Fetch all Fuel Used documents created by the current user
         documents = frappe.get_all("Fuel Used", 
             filters={"owner": current_user},
-            fields=["name", "creation", "modified", "owner", "docstatus", "site", "fuel_tanker"],
+            fields=["name", "creation", "modified", "owner", "docstatus", "site", "fuel_tanker", "entry_type"],
             order_by="creation desc"
         )
         
@@ -265,17 +271,20 @@ def user_dispensed_today():
         dict: Total fuel dispensed today by the current user or error message
     """
     try:
-        from datetime import datetime
-        
-        # Get the current user and date
+        from frappe.utils import nowdate
+
+        # Get the current user and date (site timezone, not the server's)
         current_user = frappe.session.user
-        current_date = datetime.now().date()
-        
-        # Fetch all Fuel Used documents created by the current user for today
-        documents = frappe.get_all("Fuel Used", 
+        current_date = nowdate()
+
+        # Fetch all Fuel Used documents created by the current user for today.
+        # Drafts count (incoming reports are fuel already handed out); a
+        # cancelled document moved no fuel.
+        documents = frappe.get_all("Fuel Used",
             filters={
                 "owner": current_user,
-                "date": current_date
+                "date": current_date,
+                "docstatus": ["!=", 2],
             },
             fields=["fuel_issued_lts"]
         )

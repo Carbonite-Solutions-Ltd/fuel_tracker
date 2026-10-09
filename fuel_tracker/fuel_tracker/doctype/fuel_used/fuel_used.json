@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_un6b",
+  "entry_type",
   "date",
   "set_posting_time",
   "posting_time",
@@ -26,6 +27,7 @@
   "previous_hours_copy",
   "hours_copy",
   "fuel_issued_lts",
+  "description",
   "column_break_nynp",
   "make",
   "type",
@@ -53,11 +55,12 @@
    "search_index": 1
   },
   {
+   "depends_on": "eval:doc.entry_type!='Miscellaneous'",
    "fieldname": "resource",
    "fieldtype": "Link",
    "label": "Vehicle Registration/Machine Code",
-   "options": "Resource",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.entry_type!='Miscellaneous'",
+   "options": "Resource"
   },
   {
    "fetch_from": "resource.resource_type",
@@ -75,11 +78,11 @@
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
-   "reqd": 1,
-   "default": "Today"
+   "reqd": 1
   },
   {
    "fieldname": "column_break_pdgt",
@@ -209,14 +212,15 @@
   },
   {
    "default": "Now",
+   "depends_on": "eval:doc.set_posting_time",
    "description": "Ledger position within the day. Left unticked, this is stamped at submission.",
    "fieldname": "posting_time",
    "fieldtype": "Time",
-   "label": "Posting Time",
-   "depends_on": "eval:doc.set_posting_time"
+   "label": "Posting Time"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.entry_type!='Miscellaneous'",
    "fetch_from": "resource.has_faulty_meter",
    "fetch_if_empty": 0,
    "fieldname": "meter_faulty",
@@ -241,12 +245,31 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "Normal",
+   "description": "Use Miscellaneous for fuel given out for site use rather than to a vehicle or machine, such as cleaning tools and equipment after work.",
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Entry Type",
+   "options": "Normal\nMiscellaneous",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.entry_type=='Miscellaneous'",
+   "description": "What the fuel was used for and why it was given out.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "mandatory_depends_on": "eval:doc.entry_type=='Miscellaneous'"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-02 13:05:14.402429",
+ "modified": "2026-10-05 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",

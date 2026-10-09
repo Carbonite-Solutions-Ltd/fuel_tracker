@@ -2,9 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Fuel Transfer", {
-	date(frm) {
-		warn_if_future(frm);
-	},
 	setup(frm) {
 		// A transfer moves fuel between two tankers, so never offer the same
 		// one on both sides.
@@ -35,6 +32,7 @@ frappe.ui.form.on("Fuel Transfer", {
 		refresh_balances(frm);
 	},
 	date(frm) {
+		warn_if_future(frm);
 		refresh_balances(frm);
 	},
 	posting_time(frm) {

@@ -8,10 +8,11 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
 
-from fuel_tracker.api.dashboard import fuelBalance
-from fuel_tracker.api.fuel_used import get_filtered_items
+from fuel_tracker.api.dashboard import fuelBalance, get_total_fuel_balance
+from fuel_tracker.api.fuel_used import get_filtered_items, get_fuel_used_document, user_dispensed_today
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	entry_delta,
+	get_balance_as_of,
 	get_ledger_entries,
 	get_tanker_balance_on,
 )
@@ -20,6 +21,7 @@ from fuel_tracker.tests.utils import (
 	balance,
 	dispense,
 	entry_for,
+	issue_miscellaneous,
 	make_resource,
 	make_tanker,
 	request_supply,
@@ -83,6 +85,56 @@ class TestWhitelistedEndpoints(FrappeTestCase):
 		supply(tanker, 300, date=day(-6), posting_time="08:00:00")
 
 		self.assertEqual(fuelBalance(site, tanker), 1000)
+
+	def test_dashboard_balance_needs_a_login_and_a_real_tanker(self):
+		tanker = make_tanker("TEST-FT-API-4")
+		supply(tanker.name, 300)
+
+		with self.assertRaises(frappe.ValidationError):
+			fuelBalance(tanker.site, "TEST-FT-API-NO-SUCH-TANKER")
+
+		frappe.set_user("Guest")
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				fuelBalance(tanker.site, tanker.name)
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_total_balance_card_is_the_ledger_over_real_tankers(self):
+		tanker = make_tanker("TEST-FT-API-5").name
+		before = get_total_fuel_balance()["value"]
+		supply(tanker, 250)
+
+		expected = sum(get_balance_as_of(t) for t in frappe.get_all("Fuel Tanker", pluck="name"))
+		result = get_total_fuel_balance()
+		self.assertAlmostEqual(result["value"], expected, places=3)
+		self.assertAlmostEqual(result["value"] - before, 250, places=3)
+		self.assertEqual(result["fieldtype"], "Float")
+
+	def test_fuel_used_document_requires_read_permission(self):
+		tanker = make_tanker("TEST-FT-API-6").name
+		supply(tanker, 100)
+		doc = issue_miscellaneous(tanker, 5)
+
+		self.assertEqual(get_fuel_used_document(doc.name)["data"]["name"], doc.name)
+		frappe.set_user("Guest")
+		try:
+			with self.assertRaises(Exception):
+				get_fuel_used_document(doc.name)
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_dispensed_today_ignores_cancelled_issues(self):
+		tanker = make_tanker("TEST-FT-API-7").name
+		supply(tanker, 100)
+		before = user_dispensed_today()["total_dispensed_today"]
+
+		kept = issue_miscellaneous(tanker, 10)
+		dropped = issue_miscellaneous(tanker, 7)
+		entry_for(dropped).cancel()
+
+		self.assertAlmostEqual(user_dispensed_today()["total_dispensed_today"] - before, 10, places=3)
+		self.assertEqual(kept.docstatus, 1)
 
 	def test_resource_list_exposes_the_faulty_meter_flag(self):
 		"""The mobile client needs this to know whether to demand a reading."""

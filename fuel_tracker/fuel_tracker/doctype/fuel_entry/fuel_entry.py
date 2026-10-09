@@ -4,6 +4,8 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
+	MISCELLANEOUS_TYPE,
+	OPENING_TYPE,
 	ensure_posting_time,
 	entry_delta,
 	get_balance_as_of,
@@ -12,6 +14,16 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	validate_not_future_dated,
 )
 from fuel_tracker.fuel_tracker.resource_ledger import repost_resource_readings
+
+#: Every movement type, and the link to the source document it must come from.
+SOURCE_LINKS = {
+	"Supplied": ("Fuel Supplied", "fuel_supplied_id"),
+	"Dispensed": ("Fuel Used", "fuel_utilization_id"),
+	MISCELLANEOUS_TYPE: ("Fuel Used", "fuel_utilization_id"),
+	"Adjustment": ("Fuel Adjustment", "fuel_adjustment_id"),
+	"Transfer In": ("Fuel Transfer", "fuel_transfer_id"),
+	"Transfer Out": ("Fuel Transfer", "fuel_transfer_id"),
+}
 
 
 class FuelEntry(Document):
@@ -25,7 +37,32 @@ class FuelEntry(Document):
 	"""
 
 	def validate(self):
+		self.validate_source()
 		self.set_posting_datetime()
+
+	def validate_source(self):
+		"""Only the source documents may write to the ledger.
+
+		A hand-made entry with a mistyped type moved the balance by nothing,
+		and one with a valid type added or removed fuel with no document to
+		account for it. Each movement must carry the link to the document that
+		produced it; an opening balance must come from a Fuel Balance.
+		"""
+		if self.utilization_type == OPENING_TYPE:
+			if self.is_new() and not self.flags.from_fuel_balance:
+				frappe.throw(_("An Opening Balance entry is created by submitting the tanker's Fuel Balance."))
+			return
+
+		source = SOURCE_LINKS.get(self.utilization_type)
+		if not source:
+			frappe.throw(_("Unknown utilization type {0}.").format(frappe.bold(self.utilization_type or _("(blank)"))))
+
+		source_doctype, link_field = source
+		if not self.get(link_field):
+			frappe.throw(
+				_("A {0} entry must be created from its {1}. Record the movement there instead of in the ledger directly.")
+				.format(self.utilization_type, source_doctype)
+			)
 
 	def before_submit(self):
 		validate_not_future_dated(self.date)
@@ -75,18 +112,12 @@ class FuelEntry(Document):
 		cancelling either one cancels the transfer, which in turn cancels the
 		sibling entry — the docstatus checks keep that cascade from looping.
 		"""
-		linked = {
-			"Supplied": ("Fuel Supplied", self.fuel_supplied_id),
-			"Dispensed": ("Fuel Used", self.fuel_utilization_id),
-			"Adjustment": ("Fuel Adjustment", self.fuel_adjustment_id),
-			"Transfer In": ("Fuel Transfer", self.fuel_transfer_id),
-			"Transfer Out": ("Fuel Transfer", self.fuel_transfer_id),
-		}.get(self.utilization_type)
-
-		if not linked:
+		source = SOURCE_LINKS.get(self.utilization_type)
+		if not source:
 			return
 
-		linked_doctype, linked_docname = linked
+		linked_doctype, link_field = source
+		linked_docname = self.get(link_field)
 		if not linked_docname:
 			return
 

@@ -140,6 +140,27 @@ def dispense(tanker, resource, litres, odometer_km=None, hours_copy=None,
 	return doc
 
 
+def issue_miscellaneous(tanker, litres, description="Cleaning tools after work",
+		date=None, posting_time=None, submit=True, **extra):
+	"""Issue fuel for site use: a Fuel Used with no resource."""
+	doc = frappe.get_doc({
+		"doctype": "Fuel Used",
+		"entry_type": "Miscellaneous",
+		"description": description,
+		"date": date or today(),
+		"posting_time": posting_time,
+		"set_posting_time": 1 if posting_time else 0,
+		"fuel_tanker": tanker,
+		"site": frappe.db.get_value("Fuel Tanker", tanker, "site"),
+		"fuel_issued_lts": litres,
+		**extra,
+	})
+	doc.insert()
+	if submit:
+		doc.submit()
+	return doc
+
+
 def adjust(tanker, mode="Quantity", measured=None, quantity=None,
 		reason="Physical Count Variance", remarks=None,
 		date=None, posting_time=None, submit=True):

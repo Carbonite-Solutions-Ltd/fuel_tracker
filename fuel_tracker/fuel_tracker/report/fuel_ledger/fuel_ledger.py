@@ -1,6 +1,7 @@
 import frappe
 
 def execute(filters=None):
+    filters = frappe._dict(filters or {})
     columns = get_columns()
     data = get_data(filters)
 
@@ -14,6 +15,7 @@ def execute(filters=None):
             "fuel_tanker": None,
             "resource_type": None,
             "resource": None,
+            "description": None,
             "litres_supplied": sum(row.get("litres_supplied") or 0 for row in data),
             "litres_dispensed": sum(row.get("litres_dispensed") or 0 for row in data),
             "litres_adjusted": sum(row.get("litres_adjusted") or 0 for row in data),
@@ -41,6 +43,7 @@ def get_columns():
         {"label": "Fuel Tanker", "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
         {"label": "Resource Type", "fieldname": "resource_type", "fieldtype": "Data", "width": 150},
         {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 150},
+        {"label": "Description", "fieldname": "description", "fieldtype": "Small Text", "width": 220},
         {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "width": 150},
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 150},
         {"label": "Litres Adjusted", "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 150},
@@ -69,12 +72,14 @@ def get_data(filters):
     data = frappe.db.sql(f"""
         SELECT
             fe.date, fe.posting_time, fe.site, fe.utilization_type, fe.fuel_tanker,
-            fu.resource_type, fu.resource, fu.reg_no, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
+            fu.resource_type, fu.resource, fu.reg_no, fu.description, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
             fe.previous_balance, fe.current_balance, fu.previous_odometer_km, fu.odometer_km, fe.diff_odometer, fu.previous_hours_copy, fu.hours_copy, fe.diff_hours_copy, fe.name
         FROM
             `tabFuel Entry` fe
         LEFT JOIN
             `tabFuel Used` fu ON fe.fuel_utilization_id = fu.name
+        LEFT JOIN
+            `tabFuel Tanker` ft ON fe.fuel_tanker = ft.name
         WHERE
             {conditions}
         ORDER BY
@@ -93,6 +98,12 @@ def get_conditions(filters):
     # entries (docstatus 0/2) must never appear.
     conditions = "fe.docstatus = 1"
 
+    # Multi-select filters arrive as lists from the desk but as a plain
+    # string from API calls and old saved filters; IN needs a tuple either way.
+    for key in ("fuel_tanker", "site", "resource"):
+        if filters.get(key) and not isinstance(filters[key], (list, tuple)):
+            filters[key] = [filters[key]]
+
     if filters.get("from_date"):
         conditions += " AND fe.date >= %(from_date)s"
     if filters.get("to_date"):
@@ -100,9 +111,14 @@ def get_conditions(filters):
     if filters.get("fuel_tanker"):
         conditions += " AND fe.fuel_tanker IN %(fuel_tanker)s"
     if filters.get("site"):
-        conditions += " AND fe.site IN %(site)s"
+        # The tanker's own site, as the Fuel Balance report uses. The site
+        # keyed on each entry varies, so filtering on it would show part of a
+        # tanker's running balance and leave the figures jumping between rows.
+        conditions += " AND ft.site IN %(site)s"
     if filters.get("resource"):
         conditions += " AND fu.resource IN %(resource)s"
+    if filters.get("utilization_type"):
+        conditions += " AND fe.utilization_type = %(utilization_type)s"
 
     return conditions
 

@@ -30,10 +30,15 @@ import frappe
 from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, nowdate
 
+#: Fuel issued for site use rather than to a resource — cleaning tools after
+#: work and the like. It leaves the tanker like a dispense, but has its own
+#: type so consumption reports, which score fuel against distance, never see it.
+MISCELLANEOUS_TYPE = "Miscellaneous"
+
 #: Entry types that *add* to a tanker's balance.
 INFLOW_TYPES = ("Supplied", "Transfer In")
 #: Entry types that *subtract* from a tanker's balance.
-OUTFLOW_TYPES = ("Dispensed", "Transfer Out")
+OUTFLOW_TYPES = ("Dispensed", MISCELLANEOUS_TYPE, "Transfer Out")
 #: An opening balance *sets* the running balance instead of moving it, so it
 #: is never recomputed by a repost — it is the ledger's anchor.
 OPENING_TYPE = "Opening Balance"
@@ -105,27 +110,32 @@ def get_ledger_entries(fuel_tanker, from_datetime=None, exclude=None, strict=Fal
 	entry — used while a document is mid-submit and its own row must not be
 	counted twice.
 	"""
-	filters = {"fuel_tanker": fuel_tanker, "docstatus": 1}
+	conditions = ["fe.fuel_tanker = %(fuel_tanker)s", "fe.docstatus = 1"]
+	values = {"fuel_tanker": fuel_tanker}
 	if from_datetime:
-		filters["posting_datetime"] = [">" if strict else ">=", from_datetime]
+		conditions.append("fe.posting_datetime {0} %(from_datetime)s".format(">" if strict else ">="))
+		values["from_datetime"] = get_datetime(from_datetime)
 	if exclude:
-		filters["name"] = ["!=", exclude]
+		conditions.append("fe.name != %(exclude)s")
+		values["exclude"] = exclude
 
-	return frappe.get_all(
-		"Fuel Entry",
-		filters=filters,
-		fields=[
-			"name",
-			"utilization_type",
-			"posting_datetime",
-			"creation",
-			"litres_supplied",
-			"litres_dispensed",
-			"litres_adjusted",
-			"previous_balance",
-			"current_balance",
-		],
-		order_by="posting_datetime asc, creation asc",
+	# `measured_balance` is set only for a Measured Balance adjustment — a dip
+	# count, which fixes the balance at its moment (see `repost_tanker`).
+	return frappe.db.sql(
+		"""
+		SELECT
+			fe.name, fe.utilization_type, fe.posting_datetime, fe.creation,
+			fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
+			fe.previous_balance, fe.current_balance, fe.fuel_adjustment_id,
+			IF(fa.adjustment_mode = 'Measured Balance', fa.measured_balance, NULL) AS measured_balance
+		FROM `tabFuel Entry` fe
+		LEFT JOIN `tabFuel Adjustment` fa
+			ON fe.utilization_type = 'Adjustment' AND fa.name = fe.fuel_adjustment_id
+		WHERE {conditions}
+		ORDER BY fe.posting_datetime ASC, fe.creation ASC
+		""".format(conditions=" AND ".join(conditions)),
+		values,
+		as_dict=True,
 	)
 
 
@@ -225,18 +235,36 @@ def repost_tanker(fuel_tanker, from_datetime=None):
 			continue
 
 		previous_balance = flt(running, PRECISION)
-		current_balance = flt(previous_balance + entry_delta(entry), PRECISION)
+		updates = {}
+
+		if entry.measured_balance is not None:
+			# A dip count records what was physically in the tanker at that
+			# moment, so — like an opening balance — it fixes the balance there.
+			# What gets re-derived is the correction it implies: a delivery
+			# keyed in late, dated before the dip, was already in the tank when
+			# it was dipped and must not be counted on top of the count.
+			# (ERPNext's Stock Reconciliation reposts the same way.)
+			current_balance = flt(entry.measured_balance, PRECISION)
+			litres_adjusted = flt(current_balance - previous_balance, PRECISION)
+			if flt(entry.litres_adjusted, PRECISION) != litres_adjusted:
+				updates["litres_adjusted"] = litres_adjusted
+				frappe.db.set_value(
+					"Fuel Adjustment",
+					entry.fuel_adjustment_id,
+					{"system_balance": previous_balance, "adjustment_litres": litres_adjusted},
+					update_modified=False,
+				)
+		else:
+			current_balance = flt(previous_balance + entry_delta(entry), PRECISION)
 
 		if (
 			flt(entry.previous_balance, PRECISION) != previous_balance
 			or flt(entry.current_balance, PRECISION) != current_balance
 		):
-			frappe.db.set_value(
-				"Fuel Entry",
-				entry.name,
-				{"previous_balance": previous_balance, "current_balance": current_balance},
-				update_modified=False,
-			)
+			updates.update({"previous_balance": previous_balance, "current_balance": current_balance})
+
+		if updates:
+			frappe.db.set_value("Fuel Entry", entry.name, updates, update_modified=False)
 
 		running = current_balance
 
@@ -366,7 +394,14 @@ def warn_if_ledger_goes_negative(fuel_tanker, posting_datetime, delta, source_la
 		# Entries sharing this exact moment already sort *before* the one being
 		# submitted (they were created earlier), so the cut-off is strict.
 		later = get_ledger_entries(fuel_tanker, posting_datetime, strict=True)
-		breach = next((e for e in later if flt(e.current_balance) + delta < 0), None)
+		breach = None
+		for e in later:
+			if e.utilization_type == OPENING_TYPE or e.measured_balance is not None:
+				# an opening balance or a dip count fixes the balance from there on
+				break
+			if flt(e.current_balance) + delta < 0:
+				breach = e
+				break
 		if breach:
 			frappe.msgprint(
 				_("Tanker {0} still has fuel on {1}, but inserting this transaction drives its balance negative later, from {2} onwards.")

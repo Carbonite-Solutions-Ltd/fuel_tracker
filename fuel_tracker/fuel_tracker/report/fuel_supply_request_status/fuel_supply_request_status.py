@@ -25,7 +25,7 @@ def get_columns():
 		{"label": _("Request"), "fieldname": "name", "fieldtype": "Link", "options": "Fuel Supply Request", "width": 140},
 		{"label": _("Date"), "fieldname": "date", "fieldtype": "Date", "width": 100},
 		{"label": _("Required By"), "fieldname": "required_by", "fieldtype": "Date", "width": 110},
-		{"label": _("Age (days)"), "fieldname": "age", "fieldtype": "Int", "width": 100},
+		{"label": _("Age (days)"), "fieldname": "age", "fieldtype": "Int", "width": 100, "disable_total": 1},
 		{"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 180},
 		{"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 170},
 		{"label": _("Requested"), "fieldname": "requested_litres", "fieldtype": "Float", "width": 110},

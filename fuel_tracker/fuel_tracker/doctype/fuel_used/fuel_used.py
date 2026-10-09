@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
+	MISCELLANEOUS_TYPE,
 	ensure_posting_time,
 	get_or_create_fuel_balance,
 	validate_not_future_dated,
@@ -17,19 +18,48 @@ from fuel_tracker.fuel_tracker.resource_ledger import (
 	validate_reading_fits_sequence,
 )
 
+#: Everything on the form that describes the resource being fuelled. A
+#: miscellaneous issue has no resource, so these are cleared rather than left
+#: holding whatever was picked before the entry type was switched.
+RESOURCE_FIELDS = (
+	"resource",
+	"resource_type",
+	"meter_faulty",
+	"stationed_site",
+	"reg_no",
+	"make",
+	"type",
+	"model",
+	"previous_odometer_km",
+	"odometer_km",
+	"previous_hours_copy",
+	"hours_copy",
+)
+
 
 class FuelUsed(Document):
-	"""Fuel dispensed from a tanker to a resource.
+	"""Fuel dispensed from a tanker to a resource, or issued for site use.
 
 	Balances are not computed here: the `Fuel Entry` this creates prices
 	itself against the ledger at its own posting moment, so a backdated
 	dispense is measured against the fuel the tanker actually held that day.
+
+	A *Miscellaneous* entry is fuel that leaves the tanker without going into
+	a vehicle or machine — cleaning tools after work, and similar site use.
+	It has no resource and no reading, so it takes no part in the reading
+	sequence; it carries a description of what the fuel was for instead.
 	"""
 
 	def validate(self):
 		validate_not_future_dated(self.date)
 		self.posting_datetime = ensure_posting_time(self)
-		self.sync_meter_status()
+
+		if self.is_miscellaneous():
+			self.clear_resource()
+			self.validate_description()
+		else:
+			self.validate_resource_selected()
+			self.sync_meter_status()
 
 	def before_submit(self):
 		# Stamp the posting time now unless the user asked to backdate, so a
@@ -38,7 +68,8 @@ class FuelUsed(Document):
 		if self.review_status == "Incoming Report":
 			self.review_status = "Reviewed"
 		self.validate_fuel_quantity()
-		self.sync_and_validate_resource_reading()
+		if not self.is_miscellaneous():
+			self.sync_and_validate_resource_reading()
 
 	def on_submit(self):
 		posting_datetime = ensure_posting_time(self)
@@ -53,11 +84,39 @@ class FuelUsed(Document):
 		warn_if_below_minimum(self.fuel_tanker, posting_datetime, -flt(self.fuel_issued_lts))
 
 		self.create_fuel_entry()
+		if self.is_miscellaneous():
+			return
+
 		# Reposting rather than simply writing this reading back: a document
 		# slotted into the middle of the history changes the distance recorded
 		# against the fill that follows it, and must not drag the resource's
 		# current reading backwards.
 		repost_resource_readings(self.resource, self.resource_type, self.posting_datetime)
+
+	def is_miscellaneous(self):
+		return self.entry_type == MISCELLANEOUS_TYPE
+
+	def clear_resource(self):
+		for fieldname in RESOURCE_FIELDS:
+			self.set(fieldname, None)
+
+	def validate_description(self):
+		# mandatory_depends_on only guards the desk form; enforce it here for
+		# entries arriving from the mobile API too
+		if not (self.description or "").strip():
+			frappe.throw(
+				_("Description is required for a miscellaneous entry. Say what the fuel was used for and why it was given out."),
+				frappe.MandatoryError,
+			)
+
+	def validate_resource_selected(self):
+		# the resource stopped being hard-mandatory when miscellaneous entries
+		# arrived, so a normal entry still has to insist on one
+		if not self.resource:
+			frappe.throw(
+				_("Vehicle Registration/Machine Code is required. Choose the resource being fuelled, or set the Entry Type to Miscellaneous."),
+				frappe.MandatoryError,
+			)
 
 	def validate_fuel_quantity(self):
 		if flt(self.fuel_issued_lts) <= 0:
@@ -144,7 +203,7 @@ class FuelUsed(Document):
 			"posting_time": self.posting_time,
 			"fuel_tanker": self.fuel_tanker,
 			"site": self.site,
-			"utilization_type": "Dispensed",
+			"utilization_type": MISCELLANEOUS_TYPE if self.is_miscellaneous() else "Dispensed",
 			"litres_dispensed": self.fuel_issued_lts,
 			"fuel_utilization_id": self.name,
 			"resource": self.resource,

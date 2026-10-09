@@ -18,6 +18,9 @@ from fuel_tracker.fuel_tracker.report.fuel_supply_request_status.fuel_supply_req
 from fuel_tracker.fuel_tracker.report.fuel_transfer_register.fuel_transfer_register import (
 	execute as transfer_execute,
 )
+from fuel_tracker.fuel_tracker.report.miscellaneous_fuel_register.miscellaneous_fuel_register import (
+	execute as misc_register_execute,
+)
 from fuel_tracker.fuel_tracker.report.resource_fuel_summary.resource_fuel_summary import (
 	execute as summary_execute,
 )
@@ -27,6 +30,7 @@ from fuel_tracker.tests.utils import (
 	dispense,
 	ensure_site,
 	entry_for,
+	issue_miscellaneous,
 	make_resource,
 	make_tanker,
 	request_supply,
@@ -255,7 +259,8 @@ class TestConsumptionReport(FrappeTestCase):
 
 		self.assertEqual(status[(first, 0)], "First Fill")
 		self.assertEqual(status[(still, 40)], "No Movement")
-		self.assertEqual(status[(faulty, 30)], "Meter Faulty")
+		# unscored, so no litres are attributed to either faulty fill
+		self.assertEqual({r["alert_status"] for r in rows if r["resource"] == faulty}, {"Meter Faulty"})
 		self.assertNotIn("", {r["alert_status"] for r in rows}, "no row may be left unexplained")
 
 	def test_backwards_reading_is_flagged_not_scored(self):
@@ -365,9 +370,14 @@ class TestNewReports(FrappeTestCase):
 		row = [r for r in rows if r["resource"] == eq][0]
 
 		self.assertEqual(row["fills"], 2)
-		self.assertEqual(row["litres"], 150)
-		self.assertEqual(row["distance"], 20)          # 10 h + 10 h
-		self.assertEqual(row["observed_consumption"], 7.5)  # 150 L / 20 h
+		self.assertEqual(row["litres"], 150)            # drawn: every litre issued
+		# Measured the ledger's way: the first fill's 10 h ran on fuel from
+		# before any fill on record, and the last fill's 50 L are not burned
+		# yet — so the only measured interval is 100 L over the second 10 h.
+		# (All litres over all hours, 150 / 20 = 7.5, contradicted the ledger.)
+		self.assertEqual(row["measured_litres"], 100)
+		self.assertEqual(row["distance"], 10)
+		self.assertEqual(row["observed_consumption"], 10)
 		self.assertEqual(row["status"], "Set Baseline")
 
 	def test_resource_summary_scores_against_a_baseline(self):
@@ -381,9 +391,9 @@ class TestNewReports(FrappeTestCase):
 		_cols, rows = summary_execute({"resource": [eq]})
 		row = [r for r in rows if r["resource"] == eq][0]
 
-		self.assertEqual(row["observed_consumption"], 7.5)
-		self.assertEqual(row["variance"], 2.5)
-		self.assertEqual(row["variance_pct"], 50)
+		self.assertEqual(row["observed_consumption"], 10)  # 100 L over the measured 10 h
+		self.assertEqual(row["variance"], 5)
+		self.assertEqual(row["variance_pct"], 100)
 		self.assertEqual(row["status"], "High Alert")
 
 	def test_resource_summary_counts_unmetered_fills_separately(self):
@@ -417,3 +427,137 @@ class TestNewReports(FrappeTestCase):
 
 		self.assertIn(without, listed)
 		self.assertNotIn(with_baseline, listed)
+
+
+class TestMiscellaneousInReports(FrappeTestCase):
+	"""Fuel issued for site use counts against the tanker, never against a resource."""
+
+	def test_balance_report_shows_miscellaneous_in_its_own_column(self):
+		tanker = make_tanker("TEST-FT-RA-20").name
+		truck = make_resource("TEST-FT-RA-TRK20", "Truck", reading=100).name
+
+		supply(tanker, 1000, date=day(-6), posting_time="08:00:00")
+		dispense(tanker, truck, 200, odometer_km=300, date=day(-4), posting_time="08:00:00")
+		issue_miscellaneous(tanker, 30, date=day(-3), posting_time="08:00:00")
+
+		_cols, rows = balance_execute({"to_date": today(), "fuel_tanker": [tanker]})
+		row = row_for(rows, tanker)
+
+		self.assertEqual(row["litres_dispensed"], 200, "site use is not a dispense to a resource")
+		self.assertEqual(row["litres_miscellaneous"], 30)
+		self.assertEqual(row["current_balance"], 770)
+		self.assertEqual(row["current_balance"], balance(tanker))
+		self.assertEqual(row["difference"], 0)
+		self.assertEqual(row["status"], "OK")
+
+	def test_ledger_report_lists_the_issue_with_its_description(self):
+		tanker = make_tanker("TEST-FT-RA-21").name
+		truck = make_resource("TEST-FT-RA-TRK21", "Truck", reading=100).name
+
+		supply(tanker, 500, date=day(-6), posting_time="08:00:00")
+		dispense(tanker, truck, 40, odometer_km=200, date=day(-5), posting_time="08:00:00")
+		issue_miscellaneous(
+			tanker, 12, description="Cleaning formwork after the slab pour",
+			date=day(-4), posting_time="08:00:00",
+		)
+
+		_cols, rows = ledger_execute({"fuel_tanker": [tanker]})
+		misc = [r for r in rows[:-1] if r["utilization_type"] == "Miscellaneous"]
+
+		self.assertEqual(len(misc), 1)
+		self.assertEqual(misc[0]["litres_dispensed"], 12)
+		self.assertEqual(misc[0]["description"], "Cleaning formwork after the slab pour")
+		self.assertEqual(misc[0]["current_balance"], 448)
+		self.assertEqual(rows[-1]["litres_dispensed"], 52, "the total counts every litre that left the tanker")
+
+		_cols, rows = ledger_execute({"fuel_tanker": [tanker], "utilization_type": "Miscellaneous"})
+		self.assertEqual([r["utilization_type"] for r in rows[:-1]], ["Miscellaneous"])
+
+	def test_consumption_reports_ignore_miscellaneous_issues(self):
+		tanker = make_tanker("TEST-FT-RA-22").name
+		eq = make_resource("TEST-FT-RA-EQ22", "Equipment", reading=100, average_consumption=10).name
+
+		supply(tanker, 5000, date=day(-20), posting_time="08:00:00")
+		dispense(tanker, eq, 100, hours_copy=110, date=day(-10), posting_time="08:00:00")
+		misc = issue_miscellaneous(tanker, 500, date=day(-7), posting_time="08:00:00")
+		later_fill = dispense(tanker, eq, 20, hours_copy=120, date=day(-5), posting_time="08:00:00")
+
+		_cols, rows = consumption_execute({"fuel_tanker": tanker})
+		self.assertNotIn(misc.name, [r["reference_document"] for r in rows])
+		# the previous fill is still the 100 L one, not the 500 L site issue
+		second = [r for r in rows if r["reference_document"] == later_fill.name][0]
+		self.assertEqual(second["litres_dispensed"], 100)
+		self.assertEqual(second["consumption"], 10)
+
+		_cols, rows = summary_execute({"resource": [eq]})
+		row = [r for r in rows if r["resource"] == eq][0]
+		self.assertEqual(row["litres"], 120)
+		self.assertEqual(row["fills"], 2)
+
+	def test_register_lists_only_miscellaneous_issues_with_their_details(self):
+		tanker = make_tanker("TEST-FT-RA-23").name
+		truck = make_resource("TEST-FT-RA-TRK23", "Truck", reading=100).name
+
+		supply(tanker, 1000, date=day(-6), posting_time="08:00:00")
+		dispense(tanker, truck, 100, odometer_km=200, date=day(-5), posting_time="08:00:00")
+		first = issue_miscellaneous(
+			tanker, 20, description="Cleaning shutters", requisition_number="CH-101",
+			date=day(-4), posting_time="08:00:00",
+		)
+		second = issue_miscellaneous(tanker, 35, description="Degreasing the batching plant",
+			date=day(-2), posting_time="08:00:00")
+
+		_cols, rows, _msg, chart = misc_register_execute({"fuel_tanker": [tanker]})
+
+		self.assertEqual([r["name"] for r in rows], [second.name, first.name], "newest first, no dispenses")
+		self.assertEqual(rows[1]["description"], "Cleaning shutters")
+		self.assertEqual(rows[1]["requisition_number"], "CH-101")
+		self.assertEqual(rows[1]["owner"], frappe.session.user)
+		self.assertEqual(sum(r["litres"] for r in rows), 55)
+
+		site = frappe.db.get_value("Fuel Tanker", tanker, "site")
+		self.assertEqual(chart["data"]["labels"], [site])
+		self.assertEqual(chart["data"]["datasets"][0]["values"], [55])
+
+	def test_register_filters_by_period_and_site(self):
+		site_a = ensure_site("TEST-FT-RA-SITE-24A")
+		site_b = ensure_site("TEST-FT-RA-SITE-24B")
+		tanker_a = make_tanker("TEST-FT-RA-24A", site=site_a).name
+		tanker_b = make_tanker("TEST-FT-RA-24B", site=site_b).name
+		for tanker in (tanker_a, tanker_b):
+			supply(tanker, 500, date=day(-10), posting_time="08:00:00")
+
+		old = issue_miscellaneous(tanker_a, 10, date=day(-8), posting_time="08:00:00")
+		recent_a = issue_miscellaneous(tanker_a, 15, date=day(-2), posting_time="08:00:00")
+		recent_b = issue_miscellaneous(tanker_b, 25, date=day(-2), posting_time="09:00:00")
+
+		_cols, rows, _msg, chart = misc_register_execute(
+			{"from_date": day(-5), "to_date": today(), "fuel_tanker": [tanker_a, tanker_b]}
+		)
+		names = {r["name"] for r in rows}
+		self.assertEqual(names, {recent_a.name, recent_b.name})
+		self.assertNotIn(old.name, names)
+		self.assertEqual(chart["data"]["labels"], [site_b, site_a], "largest site first")
+
+		_cols, rows, _msg, _chart = misc_register_execute({"site": [site_a], "fuel_tanker": [tanker_a, tanker_b]})
+		self.assertEqual({r["name"] for r in rows}, {old.name, recent_a.name})
+
+	def test_register_keeps_cancelled_issues_out_of_the_totals(self):
+		tanker = make_tanker("TEST-FT-RA-25").name
+		supply(tanker, 500, date=day(-6), posting_time="08:00:00")
+		kept = issue_miscellaneous(tanker, 40, date=day(-4), posting_time="08:00:00")
+		dropped = issue_miscellaneous(tanker, 60, date=day(-3), posting_time="08:00:00")
+		entry_for(dropped).cancel()
+
+		_cols, rows, _msg, _chart = misc_register_execute({"fuel_tanker": [tanker]})
+		self.assertEqual([r["name"] for r in rows], [kept.name])
+
+		cols, rows, _msg, chart = misc_register_execute({"fuel_tanker": [tanker], "include_cancelled": 1})
+		cancelled = [r for r in rows if r["name"] == dropped.name][0]
+		self.assertEqual(cancelled["status"], "Cancelled")
+		self.assertEqual(cancelled["litres"], 0, "a cancelled issue moved no fuel")
+		self.assertEqual(cancelled["cancelled_litres"], 60)
+		self.assertIn("cancelled_litres", [c["fieldname"] for c in cols])
+		self.assertEqual(sum(r["litres"] for r in rows), 40)
+		self.assertEqual(chart["data"]["datasets"][0]["values"], [40])
+		self.assertEqual(balance(tanker), 460)

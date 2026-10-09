@@ -61,6 +61,7 @@ frappe.query_reports["Average Fuel Consumption Ledger"] = {
 				"First Fill": "color: #555; background-color: #eee;",
 				"No Movement": "color: #555; background-color: #eee;",
 				"Meter Faulty": "color: white; background-color: #6c5ce7;",
+				"Not Metered": "color: #555; background-color: #eee;",
 				"Check Reading": "color: white; background-color: #d63031; font-weight: bold;",
 			};
 			const style = styles[data.alert_status];

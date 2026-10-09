@@ -32,7 +32,7 @@ frappe.query_reports["Resource Fuel Summary"] = {
 		},
 		{
 			"fieldname": "site",
-			"label": __("Site"),
+			"label": __("Stationed Site"),
 			"fieldtype": "MultiSelectList",
 			"options": "Site",
 			get_data: function (txt) {
@@ -59,6 +59,7 @@ frappe.query_reports["Resource Fuel Summary"] = {
 				"Set Baseline": "color: white; background-color: #0984e3;",
 				"Check Readings": "color: white; background-color: #d63031; font-weight: bold;",
 				"Not Measurable": "color: #555; background-color: #eee;",
+				"Not Metered": "color: #555; background-color: #eee;",
 			};
 			const style = styles[data.status];
 			if (style) {

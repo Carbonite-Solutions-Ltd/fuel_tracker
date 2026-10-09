@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-02-05 23:22:25.906382",
+ "modified": "2026-10-05 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Average Fuel Consumption Ledger",
@@ -31,6 +31,9 @@
   },
   {
    "role": "Employee Self Service"
+  },
+  {
+   "role": "Fuel Tracker Manager"
   }
  ],
  "timeout": 0

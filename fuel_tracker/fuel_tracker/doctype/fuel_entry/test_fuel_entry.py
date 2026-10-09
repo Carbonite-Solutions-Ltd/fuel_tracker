@@ -71,3 +71,37 @@ class TestFuelEntry(FrappeTestCase):
 		for doc in (sup, dis, adj):
 			with self.assertRaises(frappe.LinkExistsError):
 				frappe.get_doc(doc.doctype, doc.name).cancel()
+
+	def test_direct_cancel_of_miscellaneous_issue_blocked(self):
+		from fuel_tracker.tests.utils import issue_miscellaneous
+
+		tanker = make_tanker("TEST-FT-FE-5").name
+		supply(tanker, 100)
+		misc = issue_miscellaneous(tanker, 10)
+
+		# like every other source, it is unwound from its ledger entry
+		with self.assertRaises(frappe.LinkExistsError):
+			frappe.get_doc("Fuel Used", misc.name).cancel()
+
+	def test_hand_made_ledger_lines_are_refused(self):
+		"""Only source documents write to the ledger."""
+		tanker = make_tanker("TEST-FT-FE-6").name
+		supply(tanker, 100)
+		site = frappe.db.get_value("Fuel Tanker", tanker, "site")
+
+		def hand_made(**fields):
+			return frappe.get_doc({
+				"doctype": "Fuel Entry", "date": frappe.utils.today(), "fuel_tanker": tanker, "site": site,
+				**fields,
+			})
+
+		for fields in (
+			{"utilization_type": "Supplied", "litres_supplied": 500},  # no Fuel Supplied behind it
+			{"utilization_type": "Suplied", "litres_supplied": 500},   # typo moved nothing
+			{"utilization_type": None},
+			{"utilization_type": "Opening Balance", "current_balance": 900},  # not from a Fuel Balance
+		):
+			with self.assertRaises(frappe.ValidationError, msg=str(fields)):
+				hand_made(**fields).insert()
+
+		self.assertEqual(balance(tanker), 100)
