@@ -26,7 +26,14 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, band, get_fills, in_period
+from fuel_tracker.fuel_tracker.consumption import (
+	PRECISION,
+	as_list,
+	band,
+	get_fills,
+	in_period,
+)
+from fuel_tracker.fuel_tracker.consumption import status_note as consumption_note
 from fuel_tracker.fuel_tracker.resource_ledger import READING_FIELDS
 
 
@@ -52,6 +59,7 @@ def get_columns():
 		{"label": _("Variance %"), "fieldname": "variance_pct", "fieldtype": "Percent", "precision": 2, "disable_total": 1, "width": 110},
 		{"label": _("Unmetered Fills"), "fieldname": "faulty_fills", "fieldtype": "Int", "width": 130},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 130},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 380},
 	]
 
 
@@ -109,6 +117,7 @@ def get_data(filters):
 		row.distance = flt(row.distance, PRECISION)
 		row.observed_consumption = observed
 		row.status = get_status(row, observed, baseline)
+		row.status_note = status_note(row.status)
 
 		if observed and baseline > 0:
 			row.variance = flt(observed - baseline, PRECISION)
@@ -120,6 +129,15 @@ def get_data(filters):
 		data.append(row)
 
 	return data
+
+
+def status_note(status):
+	"""One line saying what a summary status means."""
+	return {
+		_("Set Baseline"): _("No baseline yet — enter the Observed figure as the resource's Average Consumption to start alerts."),
+		_("Check Readings"): _("A reading in this period went backwards — correct it before trusting this figure."),
+		_("Not Measurable"): _("No fill in this period could be scored (first fills, faulty meter or no movement)."),
+	}.get(status) or consumption_note(status)
 
 
 def get_status(row, observed, baseline):

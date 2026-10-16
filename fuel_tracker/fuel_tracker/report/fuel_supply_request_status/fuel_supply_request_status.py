@@ -35,6 +35,7 @@ def get_columns():
 		{"label": _("Deliveries"), "fieldname": "deliveries", "fieldtype": "Int", "width": 100},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 140},
 		{"label": _("Overdue"), "fieldname": "overdue", "fieldtype": "Data", "width": 90},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 380},
 		{"label": _("Requested By"), "fieldname": "requested_by", "fieldtype": "Link", "options": "User", "width": 160},
 	]
 
@@ -86,8 +87,21 @@ def get_data(filters):
 		row["overdue"] = (
 			_("Yes") if still_open and row.required_by and getdate(row.required_by) < today else ""
 		)
+		row["status_note"] = status_note(row)
 
 	return rows
+
+
+def status_note(row):
+	"""One line saying what a request's status means."""
+	note = {
+		"Pending": _("Approved, but no fuel has been delivered against it yet."),
+		"Partially Supplied": _("Some fuel delivered; the Outstanding litres are still to come."),
+		"Fully Supplied": _("Everything requested has been delivered."),
+	}.get(row.status, "")
+	if row.overdue:
+		note = (note + " " + _("Overdue: past its Required By date.")).strip()
+	return note
 
 
 def as_list(value):

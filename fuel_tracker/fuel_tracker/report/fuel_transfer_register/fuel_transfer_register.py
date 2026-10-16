@@ -35,6 +35,7 @@ def get_columns():
 		{"label": _("Transported By"), "fieldname": "transported_by", "fieldtype": "Data", "width": 150},
 		{"label": _("Received By"), "fieldname": "received_by", "fieldtype": "Data", "width": 150},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 100},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 340},
 	]
 
 
@@ -74,6 +75,11 @@ def get_data(filters):
 	for row in rows:
 		row["route"] = _("Cross-site") if row.from_site != row.to_site else _("Same site")
 		row["status"] = _("Cancelled") if row.docstatus == 2 else _("Submitted")
+		row["status_note"] = (
+			_("Cancelled — listed for the audit trail only; it moved no fuel.")
+			if row.docstatus == 2
+			else _("Counted in both tankers' balances.")
+		)
 		row["litres_transferred"] = flt(row.litres_transferred)
 
 	return rows

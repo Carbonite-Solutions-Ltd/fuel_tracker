@@ -44,6 +44,7 @@ def get_columns(filters):
 		{"label": _("Fuel Chit No."), "fieldname": "requisition_number", "fieldtype": "Data", "width": 120},
 		{"label": _("Issued By"), "fieldname": "owner", "fieldtype": "Link", "options": "User", "width": 200},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 100},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 340},
 	]
 	return columns
 
@@ -82,10 +83,12 @@ def get_data(filters):
 	for row in rows:
 		row["litres"] = flt(row.litres)
 		row["status"] = _("Submitted")
+		row["status_note"] = _("Counted against the tanker's balance.")
 		if row.docstatus == 2:
 			# Listed for the audit trail only: a cancelled issue moved no fuel,
 			# so its quantity is kept out of the Litres total and the chart.
 			row["status"] = _("Cancelled")
+			row["status_note"] = _("Cancelled — listed for the audit trail only; its litres are not in the total.")
 			row["cancelled_litres"] = row["litres"]
 			row["litres"] = 0
 

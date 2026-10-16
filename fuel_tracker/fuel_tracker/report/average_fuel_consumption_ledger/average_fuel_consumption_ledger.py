@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, get_fills, in_period
+from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, get_fills, in_period, status_note
 
 
 def execute(filters=None):
@@ -28,6 +28,12 @@ def get_columns():
             "label": _("Alert"),
             "fieldtype": "Data",
             "width": 150
+        },
+        {
+            "fieldname": "status_note",
+            "label": _("What It Means"),
+            "fieldtype": "Data",
+            "width": 380
         },
         {
             "fieldname": "date",
@@ -191,6 +197,7 @@ def get_data(filters):
             "variance": 0,
             "reference_document": fill.fuel_utilization_id,
             "alert_status": fill.status,
+            "status_note": status_note(fill.status),
             "posting_datetime": fill.posting_datetime,
             "creation": fill.creation,
         }

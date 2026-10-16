@@ -51,6 +51,11 @@ frappe.query_reports["Miscellaneous Fuel Register"] = {
 			value = `<span style="color: white; background-color: gray; padding: 2px 8px; border-radius: 3px;">${value}</span>`;
 		}
 
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
+		}
+
 		return value;
 	},
 };

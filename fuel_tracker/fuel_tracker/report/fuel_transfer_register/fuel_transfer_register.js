@@ -53,6 +53,11 @@ frappe.query_reports["Fuel Transfer Register"] = {
 			value = `<span style="font-weight: bold;">${value}</span>`;
 		}
 
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
+		}
+
 		return value;
 	},
 };

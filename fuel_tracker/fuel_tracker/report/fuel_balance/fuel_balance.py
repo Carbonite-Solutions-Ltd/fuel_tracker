@@ -100,11 +100,22 @@ def execute(filters=None):
 		)
 		row["difference"] = flt(row["current_balance"] - expected, PRECISION)
 		row["status"] = get_status(row)
+		row["status_note"] = status_note(row["status"])
 
 		data.append(row)
 
 	data.sort(key=lambda r: (r["site"] or "", r["fuel_tanker"]))
 	return get_columns(data), data
+
+
+def status_note(status):
+	"""One line saying what a tanker's balance status means."""
+	return {
+		_("OK"): _("Positive balance, above the tanker's minimum level."),
+		_("Low"): _("Below the tanker's minimum level — time to request a refill."),
+		_("Negative"): _("More fuel recorded out than in — a supply, opening balance or dip count is missing, or an issue was mis-keyed."),
+		_("Check Ledger"): _("The movements do not add up to the closing balance — the ledger needs repair; contact the administrator."),
+	}.get(status, "")
 
 
 def get_status(row):
@@ -268,6 +279,7 @@ def get_columns(data=None):
 		{"label": _("Closing Balance"), "fieldname": "current_balance", "fieldtype": "Float", "precision": 2, "width": 150},
 		{"label": _("Minimum Level"), "fieldname": "minimum_level", "fieldtype": "Float", "precision": 2, "width": 130},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 120},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 380},
 	]
 
 	# Surfaced only when the ledger fails to reconcile, which should never happen.
