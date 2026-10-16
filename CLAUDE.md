@@ -96,7 +96,11 @@ Python `execute(filters)` functions returning `(columns, data)`, filtering on `d
 - **`fuel_transfer_register`** / **`fuel_supply_request_status`** — transfers are invisible *as transfers* in the balance reports (they reuse the ordinary litres columns), and outstanding requests are invisible everywhere else, since those reports only show fuel that did arrive.
 - **`miscellaneous_fuel_register`** — every Miscellaneous issue with its description, chit number and issuing user, plus a litres-per-site chart. Cancelled issues (with *Include Cancelled*) show their quantity under `cancelled_litres`, never in `litres`, so the total row only counts fuel that moved. `fuel_balance` carries the same issues in its own `litres_miscellaneous` column.
 
-Litres-per-km is a small number: consumption is carried at 4 decimals, because 2 rounds a genuine truck reading away to zero and leaves the row looking unscored.
+Litres-per-km is a small number: consumption is *computed* at 4 decimals (`consumption.PRECISION`) so bands and variances stay exact, but every report column is *displayed* at 2 (`"precision": 2` on each Float/Percent column) — keep new columns consistent.
+
+Totals and formatters — both have broken the desk before:
+- **Never append a hand-built total row.** Use the report's `add_total_row` and mark columns whose sum means nothing (running balances, meter readings, rates, percentages) with `"disable_total": 1`. A hand-built row gets added into the desk's own totals, doubling them. Migrate never changes an existing site's `add_total_row` (Frappe's `ignore_values`), so turning it on for a live report needs a patch.
+- **Every `.js` formatter must start with `if (!data) return value;`** right after `default_formatter`. The datatable calls the formatter for total-row cells with `data` undefined; reading `data.x` there throws, aborts the render and leaves the header and body columns misaligned.
 
 ## Conventions
 

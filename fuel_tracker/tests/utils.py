@@ -238,5 +238,18 @@ def entry_for(doc, docstatus=1):
 	return entries[0] if entries else None
 
 
+def report_total(columns, rows):
+	"""The total row the desk shows under a report.
+
+	Reports with `add_total_row` leave totalling to the desk, which sums each
+	numeric column except those marked `disable_total`.
+	"""
+	return {
+		column["fieldname"]: sum(flt(row.get(column["fieldname"])) for row in rows)
+		for column in columns
+		if column["fieldtype"] in ("Float", "Currency", "Int") and not column.get("disable_total")
+	}
+
+
 def messages_text():
 	return " | ".join(str(m) for m in (frappe.local.message_log or []))

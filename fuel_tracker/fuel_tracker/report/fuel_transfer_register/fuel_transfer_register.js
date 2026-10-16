@@ -42,6 +42,8 @@ frappe.query_reports["Fuel Transfer Register"] = {
 
 	"formatter": function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
 		if (column.fieldname === "route" && data.route === __("Cross-site")) {
 			value = `<span style="color: #0984e3; font-weight: bold;">${value}</span>`;

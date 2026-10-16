@@ -31,12 +31,12 @@ def get_columns(filters):
 		{"label": _("Fuel Used"), "fieldname": "name", "fieldtype": "Link", "options": "Fuel Used", "width": 120},
 		{"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 170},
 		{"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 170},
-		{"label": _("Litres"), "fieldname": "litres", "fieldtype": "Float", "width": 100},
+		{"label": _("Litres"), "fieldname": "litres", "fieldtype": "Float", "precision": 2, "width": 100},
 	]
 
 	if filters.get("include_cancelled"):
 		columns.append(
-			{"label": _("Cancelled Litres"), "fieldname": "cancelled_litres", "fieldtype": "Float", "width": 130}
+			{"label": _("Cancelled Litres"), "fieldname": "cancelled_litres", "fieldtype": "Float", "precision": 2, "width": 130}
 		)
 
 	columns += [

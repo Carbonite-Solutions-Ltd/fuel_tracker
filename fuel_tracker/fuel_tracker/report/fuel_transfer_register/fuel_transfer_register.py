@@ -30,7 +30,7 @@ def get_columns():
 		{"label": _("From Tanker"), "fieldname": "from_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 170},
 		{"label": _("To Site"), "fieldname": "to_site", "fieldtype": "Link", "options": "Site", "width": 180},
 		{"label": _("To Tanker"), "fieldname": "to_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 170},
-		{"label": _("Litres"), "fieldname": "litres_transferred", "fieldtype": "Float", "width": 110},
+		{"label": _("Litres"), "fieldname": "litres_transferred", "fieldtype": "Float", "precision": 2, "width": 110},
 		{"label": _("Route"), "fieldname": "route", "fieldtype": "Data", "width": 110},
 		{"label": _("Transported By"), "fieldname": "transported_by", "fieldtype": "Data", "width": 150},
 		{"label": _("Received By"), "fieldname": "received_by", "fieldtype": "Data", "width": 150},
