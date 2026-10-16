@@ -31,12 +31,12 @@ def get_columns(filters):
 		{"label": _("Fuel Used"), "fieldname": "name", "fieldtype": "Link", "options": "Fuel Used", "width": 120},
 		{"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 170},
 		{"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 170},
-		{"label": _("Litres"), "fieldname": "litres", "fieldtype": "Float", "width": 100},
+		{"label": _("Litres"), "fieldname": "litres", "fieldtype": "Float", "precision": 2, "width": 100},
 	]
 
 	if filters.get("include_cancelled"):
 		columns.append(
-			{"label": _("Cancelled Litres"), "fieldname": "cancelled_litres", "fieldtype": "Float", "width": 130}
+			{"label": _("Cancelled Litres"), "fieldname": "cancelled_litres", "fieldtype": "Float", "precision": 2, "width": 130}
 		)
 
 	columns += [
@@ -44,6 +44,7 @@ def get_columns(filters):
 		{"label": _("Fuel Chit No."), "fieldname": "requisition_number", "fieldtype": "Data", "width": 120},
 		{"label": _("Issued By"), "fieldname": "owner", "fieldtype": "Link", "options": "User", "width": 200},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 100},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 340},
 	]
 	return columns
 
@@ -82,10 +83,12 @@ def get_data(filters):
 	for row in rows:
 		row["litres"] = flt(row.litres)
 		row["status"] = _("Submitted")
+		row["status_note"] = _("Counted against the tanker's balance.")
 		if row.docstatus == 2:
 			# Listed for the audit trail only: a cancelled issue moved no fuel,
 			# so its quantity is kept out of the Litres total and the chart.
 			row["status"] = _("Cancelled")
+			row["status_note"] = _("Cancelled — listed for the audit trail only; its litres are not in the total.")
 			row["cancelled_litres"] = row["litres"]
 			row["litres"] = 0
 

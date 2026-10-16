@@ -49,6 +49,8 @@ frappe.query_reports["Resource Fuel Summary"] = {
 
 	"formatter": function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
 		if (column.fieldname === "status") {
 			const styles = {
@@ -69,6 +71,11 @@ frappe.query_reports["Resource Fuel Summary"] = {
 			value = `<span style="font-weight: bold;">${value}</span>`;
 		} else if (column.fieldname === "variance_pct" && data.variance_pct) {
 			value = `<span style="color: ${data.variance_pct > 0 ? "red" : "green"};">${value}</span>`;
+		}
+
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
 		}
 
 		return value;

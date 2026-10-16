@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, get_fills, in_period
+from fuel_tracker.fuel_tracker.consumption import PRECISION, as_list, get_fills, in_period, status_note
 
 
 def execute(filters=None):
@@ -28,6 +28,12 @@ def get_columns():
             "label": _("Alert"),
             "fieldtype": "Data",
             "width": 150
+        },
+        {
+            "fieldname": "status_note",
+            "label": _("What It Means"),
+            "fieldtype": "Data",
+            "width": 380
         },
         {
             "fieldname": "date",
@@ -72,60 +78,70 @@ def get_columns():
             "fieldname": "current_hours",
             "label": _("Current Hours"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 150
         },
         {
             "fieldname": "diff_hours",
             "label": _("Difference in Hours"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "previous_odometer",
             "label": _("Previous Odometer (KM)"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "current_odometer",
             "label": _("Current Odometer (KM)"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "kilometers",
             "label": _("Kilometers"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 150
         },
         {
             "fieldname": "litres_dispensed",
             "label": _("Previous Litres Dispensed"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "fuel_supposed_to_be_used",
             "label": _("Fuel Supposed to be Used"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "consumption",
             "label": _("Consumption"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 150
         },
         {
             "fieldname": "average_consumption",
             "label": _("Average Consumption"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 200
         },
         {
             "fieldname": "variance",
             "label": _("Variance"),
             "fieldtype": "Float",
+            "precision": 2,
             "width": 150
         },
         {
@@ -181,6 +197,7 @@ def get_data(filters):
             "variance": 0,
             "reference_document": fill.fuel_utilization_id,
             "alert_status": fill.status,
+            "status_note": status_note(fill.status),
             "posting_datetime": fill.posting_datetime,
             "creation": fill.creation,
         }

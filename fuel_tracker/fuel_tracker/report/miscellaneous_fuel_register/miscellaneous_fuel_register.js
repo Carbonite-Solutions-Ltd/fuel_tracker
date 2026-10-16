@@ -42,11 +42,18 @@ frappe.query_reports["Miscellaneous Fuel Register"] = {
 
 	"formatter": function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
-		if (column.fieldname === "litres" && data && data.litres) {
+		if (column.fieldname === "litres" && data.litres) {
 			value = `<span style="color: red; font-weight: bold;">${value}</span>`;
-		} else if (column.fieldname === "status" && data && data.status === __("Cancelled")) {
+		} else if (column.fieldname === "status" && data.status === __("Cancelled")) {
 			value = `<span style="color: white; background-color: gray; padding: 2px 8px; border-radius: 3px;">${value}</span>`;
+		}
+
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
 		}
 
 		return value;

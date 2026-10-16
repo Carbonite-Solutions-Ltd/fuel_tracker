@@ -10,7 +10,7 @@ from fuel_tracker.fuel_tracker.report.average_fuel_consumption_ledger.average_fu
 )
 from fuel_tracker.fuel_tracker.report.fuel_balance.fuel_balance import execute as fb_execute
 from fuel_tracker.fuel_tracker.report.fuel_ledger.fuel_ledger import execute as fl_execute
-from fuel_tracker.tests.utils import adjust, balance, dispense, make_resource, make_tanker, supply
+from fuel_tracker.tests.utils import adjust, balance, dispense, make_resource, make_tanker, report_total, supply
 
 test_ignore = ["Item", "Company"]
 
@@ -64,8 +64,8 @@ class TestReports(FrappeTestCase):
 		dispense(tanker, truck, 30, odometer_km=200)
 		adjust(tanker, mode="Quantity", quantity=-40)
 
-		_, rows = fl_execute(frappe._dict({"fuel_tanker": [tanker]}))
-		data_rows, total_row = rows[:-1], rows[-1]
+		cols, data_rows = fl_execute(frappe._dict({"fuel_tanker": [tanker]}))
+		total_row = report_total(cols, data_rows)
 
 		self.assertEqual(len(data_rows), 4)
 		self.assertEqual({r["utilization_type"] for r in data_rows},

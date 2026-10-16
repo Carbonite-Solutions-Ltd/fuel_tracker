@@ -100,11 +100,22 @@ def execute(filters=None):
 		)
 		row["difference"] = flt(row["current_balance"] - expected, PRECISION)
 		row["status"] = get_status(row)
+		row["status_note"] = status_note(row["status"])
 
 		data.append(row)
 
 	data.sort(key=lambda r: (r["site"] or "", r["fuel_tanker"]))
 	return get_columns(data), data
+
+
+def status_note(status):
+	"""One line saying what a tanker's balance status means."""
+	return {
+		_("OK"): _("Positive balance, above the tanker's minimum level."),
+		_("Low"): _("Below the tanker's minimum level — time to request a refill."),
+		_("Negative"): _("More fuel recorded out than in — a supply, opening balance or dip count is missing, or an issue was mis-keyed."),
+		_("Check Ledger"): _("The movements do not add up to the closing balance — the ledger needs repair; contact the administrator."),
+	}.get(status, "")
 
 
 def get_status(row):
@@ -249,31 +260,32 @@ def get_columns(data=None):
 	columns = [
 		{"label": _("Site"), "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 200},
 		{"label": _("Fuel Tanker"), "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 190},
-		{"label": _("Opening Balance"), "fieldname": "opening_balance", "fieldtype": "Float", "width": 140},
-		{"label": _("Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "width": 120},
-		{"label": _("Transferred In"), "fieldname": "transferred_in", "fieldtype": "Float", "width": 130},
-		{"label": _("Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "width": 120},
-		{"label": _("Miscellaneous"), "fieldname": "litres_miscellaneous", "fieldtype": "Float", "width": 130},
-		{"label": _("Transferred Out"), "fieldname": "transferred_out", "fieldtype": "Float", "width": 140},
-		{"label": _("Adjusted"), "fieldname": "litres_adjusted", "fieldtype": "Float", "width": 120},
+		{"label": _("Opening Balance"), "fieldname": "opening_balance", "fieldtype": "Float", "precision": 2, "width": 140},
+		{"label": _("Supplied"), "fieldname": "litres_supplied", "fieldtype": "Float", "precision": 2, "width": 120},
+		{"label": _("Transferred In"), "fieldname": "transferred_in", "fieldtype": "Float", "precision": 2, "width": 130},
+		{"label": _("Dispensed"), "fieldname": "litres_dispensed", "fieldtype": "Float", "precision": 2, "width": 120},
+		{"label": _("Miscellaneous"), "fieldname": "litres_miscellaneous", "fieldtype": "Float", "precision": 2, "width": 130},
+		{"label": _("Transferred Out"), "fieldname": "transferred_out", "fieldtype": "Float", "precision": 2, "width": 140},
+		{"label": _("Adjusted"), "fieldname": "litres_adjusted", "fieldtype": "Float", "precision": 2, "width": 120},
 	]
 
 	# Only worth a column when a tanker was actually opened inside the period.
 	if any(row.get("opening_entry") for row in (data or [])):
 		columns.append(
-			{"label": _("Opening Entry"), "fieldname": "opening_entry", "fieldtype": "Float", "width": 130}
+			{"label": _("Opening Entry"), "fieldname": "opening_entry", "fieldtype": "Float", "precision": 2, "width": 130}
 		)
 
 	columns += [
-		{"label": _("Closing Balance"), "fieldname": "current_balance", "fieldtype": "Float", "width": 150},
-		{"label": _("Minimum Level"), "fieldname": "minimum_level", "fieldtype": "Float", "width": 130},
+		{"label": _("Closing Balance"), "fieldname": "current_balance", "fieldtype": "Float", "precision": 2, "width": 150},
+		{"label": _("Minimum Level"), "fieldname": "minimum_level", "fieldtype": "Float", "precision": 2, "width": 130},
 		{"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 120},
+		{"label": _("What It Means"), "fieldname": "status_note", "fieldtype": "Data", "width": 380},
 	]
 
 	# Surfaced only when the ledger fails to reconcile, which should never happen.
 	if any(row.get("difference") for row in (data or [])):
 		columns.append(
-			{"label": _("Difference"), "fieldname": "difference", "fieldtype": "Float", "width": 120}
+			{"label": _("Difference"), "fieldname": "difference", "fieldtype": "Float", "precision": 2, "width": 120}
 		)
 
 	return columns

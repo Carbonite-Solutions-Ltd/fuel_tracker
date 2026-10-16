@@ -42,6 +42,8 @@ frappe.query_reports["Fuel Transfer Register"] = {
 
 	"formatter": function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
 		if (column.fieldname === "route" && data.route === __("Cross-site")) {
 			value = `<span style="color: #0984e3; font-weight: bold;">${value}</span>`;
@@ -49,6 +51,11 @@ frappe.query_reports["Fuel Transfer Register"] = {
 			value = `<span style="color: white; background-color: gray; padding: 2px 8px; border-radius: 3px;">${value}</span>`;
 		} else if (column.fieldname === "litres_transferred") {
 			value = `<span style="font-weight: bold;">${value}</span>`;
+		}
+
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
 		}
 
 		return value;

@@ -40,6 +40,8 @@ frappe.query_reports["Fuel Balance"] = {
 
     "formatter": function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
+        // the total row has no row data; leave it with the default formatting
+        if (!data) return value;
 
         if (["litres_supplied", "transferred_in"].includes(column.fieldname) && data[column.fieldname]) {
             value = `<span style="color: green;">${value}</span>`;
@@ -57,6 +59,11 @@ frappe.query_reports["Fuel Balance"] = {
             } else {
                 value = `<span style="color: green;">${value}</span>`;
             }
+        }
+
+        // hovering the status shows the same one-line explanation as the column
+        if (column.fieldname === "status" && data.status_note) {
+            value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
         }
 
         return value;

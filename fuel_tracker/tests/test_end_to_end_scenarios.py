@@ -47,6 +47,7 @@ from fuel_tracker.tests.utils import (
 	make_resource,
 	make_tanker,
 	messages_text,
+	report_total,
 	request_supply,
 	supply,
 	transfer,
@@ -162,11 +163,11 @@ def movements(rows):
 
 
 def ledger_rows(**filters):
-	"""Fuel Ledger report split into (data rows, total row)."""
-	_cols, rows = ledger_execute(filters)
+	"""Fuel Ledger report as (data rows, the total row the desk shows)."""
+	cols, rows = ledger_execute(filters)
 	if not rows:
 		return [], None
-	return rows[:-1], rows[-1]
+	return rows, report_total(cols, rows)
 
 
 def consumption_rows(resources, **filters):
@@ -399,7 +400,6 @@ class ScenarioAssertions:
 			self.assertEqual(movements(data), [tuple(flt(v, 3) if not isinstance(v, str) else v for v in r) for r in rows], key)
 			self.assertEqual({r["fuel_tanker"] for r in data}, {ns[key]})
 			self.assert_chain(data)
-			self.assertEqual(total["site"], "Total")
 			self.assertAlmostEqual(flt(total["litres_supplied"]), sum(r[1] for r in rows), places=3)
 			self.assertAlmostEqual(flt(total["litres_dispensed"]), sum(r[2] for r in rows), places=3)
 			self.assertAlmostEqual(flt(total["litres_adjusted"]), sum(r[3] for r in rows), places=3)
@@ -750,7 +750,6 @@ class TestSiteWeek(ScenarioAssertions, FrappeTestCase):
 		data, total = ledger_rows(site=[ns.site_b])
 		self.assertEqual(len(data), 7)
 		self.assertEqual({r["fuel_tanker"] for r in data}, {ns.tb1})
-		self.assertEqual(total["site"], "Total")
 		data, _total = ledger_rows(site=[ns.site_a])
 		self.assertEqual(len(data), 10 + 5)
 

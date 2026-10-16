@@ -158,6 +158,22 @@ def band(consumption, baseline):
 	return _("Above Average")
 
 
+def status_note(status):
+	"""One line saying what a consumption status means, for the reports."""
+	return {
+		_("Good"): _("Burned no more fuel than the resource's baseline."),
+		_("Above Average"): _("Up to 10% over the baseline — normal variation."),
+		_("Warning"): _("10–20% over the baseline — keep an eye on this resource."),
+		_("High Alert"): _("More than 20% over the baseline — check for leaks, theft or a mis-keyed fill."),
+		_("No Baseline"): _("Measured, but the resource has no Average Consumption set to compare against."),
+		_("First Fill"): _("No earlier metered fill, so there is no interval to measure yet."),
+		_("No Movement"): _("The reading has not changed since the last fill, so consumption cannot be worked out."),
+		_("Meter Faulty"): _("Fuelled without a reading because the meter is flagged faulty — not scored."),
+		_("Check Reading"): _("The reading is lower than the one before it — likely a typing error or a replaced meter."),
+		_("Not Metered"): _("This resource has no odometer or hour meter, so it is never scored."),
+	}.get(status, "")
+
+
 def in_period(entry, from_date=None, to_date=None):
 	if from_date and entry.date < getdate(from_date):
 		return False

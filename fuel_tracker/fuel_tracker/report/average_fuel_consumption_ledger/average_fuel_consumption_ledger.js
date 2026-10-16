@@ -48,6 +48,8 @@ frappe.query_reports["Average Fuel Consumption Ledger"] = {
 	],
 	"formatter": function(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
 		if (column.fieldname == "alert_status" && data.alert_status) {
 			// Scored bands carry a colour; the "cannot be scored" statuses are
@@ -68,6 +70,11 @@ frappe.query_reports["Average Fuel Consumption Ledger"] = {
 			if (style) {
 				value = `<span style='${style} padding: 2px 8px; border-radius: 3px;'>${value}</span>`;
 			}
+		}
+
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "alert_status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
 		}
 
 		return value;

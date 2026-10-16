@@ -55,6 +55,8 @@ frappe.query_reports["Fuel Ledger"] = {
 
     "formatter": function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
+        // the total row has no row data; leave it with the default formatting
+        if (!data) return value;
         
         if (column.fieldname === "litres_supplied" && data.litres_supplied) {
             value = `<span style="color: green;">${value}</span>`;

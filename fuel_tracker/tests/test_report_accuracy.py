@@ -33,6 +33,7 @@ from fuel_tracker.tests.utils import (
 	issue_miscellaneous,
 	make_resource,
 	make_tanker,
+	report_total,
 	request_supply,
 	supply,
 	transfer,
@@ -193,8 +194,8 @@ class TestFuelLedgerReport(FrappeTestCase):
 		# inserted out of order — the report must still read continuously
 		supply(tanker, 200, date=day(-8), posting_time="08:00:00")
 
-		_cols, rows = ledger_execute({"fuel_tanker": [tanker]})
-		data = rows[:-1]
+		cols, data = ledger_execute({"fuel_tanker": [tanker]})
+		total = report_total(cols, data)
 
 		running = None
 		for row in data:
@@ -203,8 +204,9 @@ class TestFuelLedgerReport(FrappeTestCase):
 			running = row["current_balance"]
 
 		self.assertEqual(running, balance(tanker))
-		self.assertEqual(rows[-1]["litres_supplied"], 700)
-		self.assertEqual(rows[-1]["litres_dispensed"], 50)
+		self.assertEqual(total["litres_supplied"], 700)
+		self.assertEqual(total["litres_dispensed"], 50)
+		self.assertNotIn("current_balance", total, "running balances must not be added up")
 
 	def test_rows_are_grouped_by_tanker(self):
 		"""Balances are per tanker, so interleaving them would read as nonsense."""
@@ -215,7 +217,7 @@ class TestFuelLedgerReport(FrappeTestCase):
 		supply(first, 300, date=day(-3), posting_time="08:00:00")
 
 		_cols, rows = ledger_execute({"fuel_tanker": [first, second]})
-		tankers = [r["fuel_tanker"] for r in rows[:-1]]
+		tankers = [r["fuel_tanker"] for r in rows]
 
 		self.assertEqual(tankers, sorted(tankers), "rows must not interleave tankers")
 
@@ -461,17 +463,17 @@ class TestMiscellaneousInReports(FrappeTestCase):
 			date=day(-4), posting_time="08:00:00",
 		)
 
-		_cols, rows = ledger_execute({"fuel_tanker": [tanker]})
-		misc = [r for r in rows[:-1] if r["utilization_type"] == "Miscellaneous"]
+		cols, rows = ledger_execute({"fuel_tanker": [tanker]})
+		misc = [r for r in rows if r["utilization_type"] == "Miscellaneous"]
 
 		self.assertEqual(len(misc), 1)
 		self.assertEqual(misc[0]["litres_dispensed"], 12)
 		self.assertEqual(misc[0]["description"], "Cleaning formwork after the slab pour")
 		self.assertEqual(misc[0]["current_balance"], 448)
-		self.assertEqual(rows[-1]["litres_dispensed"], 52, "the total counts every litre that left the tanker")
+		self.assertEqual(report_total(cols, rows)["litres_dispensed"], 52, "the total counts every litre that left the tanker")
 
 		_cols, rows = ledger_execute({"fuel_tanker": [tanker], "utilization_type": "Miscellaneous"})
-		self.assertEqual([r["utilization_type"] for r in rows[:-1]], ["Miscellaneous"])
+		self.assertEqual([r["utilization_type"] for r in rows], ["Miscellaneous"])
 
 	def test_consumption_reports_ignore_miscellaneous_issues(self):
 		tanker = make_tanker("TEST-FT-RA-22").name

@@ -54,6 +54,8 @@ frappe.query_reports["Fuel Supply Request Status"] = {
 
 	"formatter": function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
+		// the total row has no row data; leave it with the default formatting
+		if (!data) return value;
 
 		if (column.fieldname === "status") {
 			const styles = {
@@ -69,6 +71,11 @@ frappe.query_reports["Fuel Supply Request Status"] = {
 			value = `<span style="color: white; background-color: red; padding: 2px 8px; border-radius: 3px; font-weight: bold;">${value}</span>`;
 		} else if (column.fieldname === "pending_litres" && data.pending_litres) {
 			value = `<span style="color: red;">${value}</span>`;
+		}
+
+		// hovering the status shows the same one-line explanation as the column
+		if (column.fieldname === "status" && data.status_note) {
+			value = `<span title="${frappe.utils.escape_html(data.status_note)}">${value}</span>`;
 		}
 
 		return value;
