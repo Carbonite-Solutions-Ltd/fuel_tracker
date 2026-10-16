@@ -620,9 +620,9 @@ class TestSiteWeek(ScenarioAssertions, FrappeTestCase):
 
 		data, _total = ledger_rows(resource=[ns.eq1, ns.trk1], fuel_tanker=ns.tankers)
 		by = {r["name"]: r for r in data}
-		self.assert_fields(by[entry_for(ns.e2).name], "ledger equipment", resource_type="Equipment",
+		self.assert_fields(by[entry_for(ns.e2).name], "ledger equipment",
 			previous_hours_copy=110, hours_copy=125, diff_hours_copy=15, diff_odometer=0)
-		self.assert_fields(by[entry_for(ns.f2).name], "ledger truck", resource_type="Truck",
+		self.assert_fields(by[entry_for(ns.f2).name], "ledger truck",
 			previous_odometer_km=10400, odometer_km=11200, diff_odometer=800, diff_hours_copy=0)
 
 		self.assertEqual(frappe.db.get_value("Resource", ns.trk1, "current_odometer"), 11500)

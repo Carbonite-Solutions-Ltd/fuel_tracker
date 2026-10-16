@@ -222,6 +222,25 @@ class TestFuelLedgerReport(FrappeTestCase):
 		self.assertEqual(tankers, sorted(tankers), "rows must not interleave tankers")
 
 
+	def test_reg_no_follows_the_resource_and_resource_type_is_gone(self):
+		tanker = make_tanker("TEST-FT-RA-26").name
+		truck = make_resource("TEST-FT-RA-TRK26", "Truck", reading=100)
+		truck.reg_no = "GT 1234-26"
+		truck.save()
+		supply(tanker, 500, date=day(-5), posting_time="08:00:00")
+		dispense(tanker, truck.name, 40, odometer_km=200, date=day(-4), posting_time="08:00:00")
+
+		cols, rows = ledger_execute({"fuel_tanker": [tanker]})
+		fieldnames = [c["fieldname"] for c in cols]
+		self.assertNotIn("resource_type", fieldnames)
+		self.assertEqual(fieldnames[fieldnames.index("resource") + 1], "reg_no")
+
+		dispensed = [r for r in rows if r["resource"] == truck.name][0]
+		# the registration from the Resource, not Fuel Used.reg_no (a copy of the chassis number)
+		self.assertEqual(dispensed["reg_no"], "GT 1234-26")
+		self.assertNotIn("resource_type", dispensed)
+
+
 class TestConsumptionReport(FrappeTestCase):
 	def test_consumption_is_measured_tank_to_tank(self):
 		tanker = make_tanker("TEST-FT-RA-8").name
