@@ -105,7 +105,7 @@
    "fetch_from": "resource.chassis_number",
    "fieldname": "reg_no",
    "fieldtype": "Data",
-   "label": "Chassis Number",
+   "label": "Chassis Number / Machine Code",
    "read_only": 1
   },
   {
@@ -269,7 +269,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-05 12:00:00.000000",
+ "modified": "2026-10-16 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Fuel Used",

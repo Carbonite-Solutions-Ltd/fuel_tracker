@@ -83,7 +83,7 @@
   {
    "fieldname": "chassis_number",
    "fieldtype": "Data",
-   "label": "Chassis Number",
+   "label": "Chassis Number / Machine Code",
    "unique": 1
   },
   {
@@ -116,7 +116,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-02 13:10:17.626916",
+ "modified": "2026-10-16 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fuel Tracker",
  "name": "Resource",

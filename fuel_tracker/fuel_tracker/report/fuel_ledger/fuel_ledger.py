@@ -20,8 +20,8 @@ def get_columns():
         {"label": "Site", "fieldname": "site", "fieldtype": "Link", "options": "Site", "width": 150},
         {"label": "Utilization Type", "fieldname": "utilization_type", "fieldtype": "Data", "width": 150},
         {"label": "Fuel Tanker", "fieldname": "fuel_tanker", "fieldtype": "Link", "options": "Fuel Tanker", "width": 150},
-        {"label": "Resource Type", "fieldname": "resource_type", "fieldtype": "Data", "width": 150},
         {"label": "Resource", "fieldname": "resource", "fieldtype": "Link", "options": "Resource", "width": 150},
+        {"label": "Reg. No", "fieldname": "reg_no", "fieldtype": "Data", "width": 130},
         {"label": "Description", "fieldname": "description", "fieldtype": "Small Text", "width": 220},
         {"label": "Litres Supplied", "fieldname": "litres_supplied", "fieldtype": "Float", "precision": 2, "width": 150},
         {"label": "Litres Dispensed", "fieldname": "litres_dispensed", "fieldtype": "Float", "precision": 2, "width": 150},
@@ -51,7 +51,7 @@ def get_data(filters):
     data = frappe.db.sql(f"""
         SELECT
             fe.date, fe.posting_time, fe.site, fe.utilization_type, fe.fuel_tanker,
-            fu.resource_type, fu.resource, fu.reg_no, fu.description, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
+            fu.resource, r.reg_no, fu.description, fe.litres_supplied, fe.litres_dispensed, fe.litres_adjusted,
             fe.previous_balance, fe.current_balance, fu.previous_odometer_km, fu.odometer_km, fe.diff_odometer, fu.previous_hours_copy, fu.hours_copy, fe.diff_hours_copy, fe.name
         FROM
             `tabFuel Entry` fe
@@ -59,6 +59,8 @@ def get_data(filters):
             `tabFuel Used` fu ON fe.fuel_utilization_id = fu.name
         LEFT JOIN
             `tabFuel Tanker` ft ON fe.fuel_tanker = ft.name
+        LEFT JOIN
+            `tabResource` r ON fu.resource = r.name
         WHERE
             {conditions}
         ORDER BY
