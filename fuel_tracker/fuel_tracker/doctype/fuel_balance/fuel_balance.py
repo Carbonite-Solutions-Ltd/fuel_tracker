@@ -1,46 +1,77 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import add_days, get_datetime, getdate
 
-from fuel_tracker.fuel_tracker.fuel_ledger import PRECISION, get_balance_as_of
+from fuel_tracker.fuel_tracker.fuel_ledger import (
+	OPENING_TYPE,
+	get_first_movement_datetime,
+	get_opening_datetime,
+	make_posting_datetime,
+)
 
 
 class FuelBalance(Document):
+	"""A tanker's opening balance — and, once submitted, its live balance.
+
+	Submitting it seeds an Opening Balance entry at 00:00 on its date, and no
+	fuel can move on the tanker until it is submitted (`validate_tanker_opened`).
+	After that `sync_fuel_balance` keeps it pointed at the tail of the ledger.
+	"""
+
 	def validate(self):
-		# Runs on save and on submit: a typed figure left on the draft would
-		# show as the tanker's balance while the ledger says otherwise.
-		self.refuse_opening_behind_movements()
+		self.validate_opening_date()
 
 	def on_submit(self):
 		self.seed_opening_fuel_entry()
 
-	def refuse_opening_behind_movements(self):
-		"""Do not silently discard an opening figure the ledger cannot take.
+	def validate_opening_date(self):
+		"""An opening must come before every movement already on the tanker.
 
-		The draft row is created by a tanker's first movement and tracks the
-		ledger from then on, so submitting it untouched is fine — there is
-		nothing to seed. But a figure typed into it after movements exist
-		used to vanish without a word: the opening entry is only seeded on an
-		empty ledger, so the tanker carried on from zero and went negative.
-		Refuse instead, and point at the tool that does work on a live ledger.
+		Normally the ledger is empty here, since nothing can be recorded on a
+		tanker before its opening. Tankers that took movements before that rule
+		existed can still be opened, as long as the opening is dated before
+		their first movement: it is seeded there and every later entry
+		re-prices from it. An opening dated after a movement would leave that
+		movement priced against nothing, so it is refused.
 		"""
-		if not self.fuel_tanker or not self.has_active_ledger():
+		if not self.fuel_tanker:
 			return
 
-		if flt(self.balance, PRECISION) == flt(get_balance_as_of(self.fuel_tanker), PRECISION):
+		first = get_first_movement_datetime(self.fuel_tanker)
+		if not first:
 			return
 
+		opening = get_opening_datetime(self.fuel_tanker)
+		if opening:
+			frappe.throw(
+				_("Tanker {0} already has an opening balance on {1}. Correct its stock with a Fuel Adjustment in Measured Balance mode instead.")
+				.format(frappe.bold(self.fuel_tanker), frappe.format(getdate(opening), {"fieldtype": "Date"})),
+				title=_("Already Opened"),
+			)
+
+		first = get_datetime(first)
+		if make_posting_datetime(self.date, "00:00:00") < first:
+			return
+
+		# a draft created by a movement before the rule existed can still be
+		# saved untouched; only a figure or date being entered is checked
+		if self.docstatus == 0 and not (self.has_value_changed("balance") or self.has_value_changed("date")):
+			return
+
+		# the opening sits at 00:00 on its date, so it must fall on the day of
+		# the first movement at the latest — or the day before, if that
+		# movement was itself posted at midnight
+		latest = first.date() if first > get_datetime(first.date()) else add_days(first.date(), -1)
 		frappe.throw(
-			_("Tanker {0} already has fuel movements, so {1} L cannot be applied as its opening balance. To set the stock it held, submit a Fuel Adjustment in Measured Balance mode, dated when the tank was counted — it may be dated before the first movement.")
-			.format(frappe.bold(self.fuel_tanker), flt(self.balance, PRECISION)),
-			title=_("Ledger Already Started"),
+			_("Tanker {0} already has fuel movements from {1}, so its opening balance must be dated before them. Set the Date to {2} or earlier.")
+			.format(
+				frappe.bold(self.fuel_tanker),
+				frappe.format(first, {"fieldtype": "Datetime"}),
+				frappe.bold(frappe.format(getdate(latest), {"fieldtype": "Date"})),
+			),
+			title=_("Opening Must Come First"),
 		)
-
-	def has_active_ledger(self):
-		# Cancelled Fuel Entries (docstatus 2) are ignored, so a fresh balance
-		# can re-seed after the previous opening entry was cancelled.
-		return frappe.db.exists("Fuel Entry", {"fuel_tanker": self.fuel_tanker, "docstatus": ["!=", 2]})
 
 	def on_cancel(self):
 		self.block_if_active_ledger("cancelled")
@@ -65,24 +96,17 @@ class FuelBalance(Document):
 			)
 
 	def seed_opening_fuel_entry(self):
-		"""Create the opening Fuel Entry for this tanker's ledger.
+		"""Create the Opening Balance entry that anchors this tanker's ledger.
 
-		The very first time a Fuel Balance is submitted for a fuel tanker there
-		is no ledger history yet, so seed a Fuel Entry that carries the opening
-		balance forward. Subsequent balances are skipped because the tanker
-		already has at least one Fuel Entry.
-
-		The entry posts at 00:00:00 on its date so that it anchors the ledger:
-		anything else recorded that same day sorts after it, and anything
-		dated earlier is refused outright (see `validate_not_before_opening`).
+		It posts at 00:00:00 on its date, so anything else recorded that day
+		sorts after it, and anything dated earlier is refused outright (see
+		`validate_not_before_opening`). On a tanker that already has movements
+		— dated after it, as `validate_opening_date` ensures — submitting the
+		entry reposts them, so every later balance continues from the opening.
+		A cancelled opening entry does not count, so a fresh balance can
+		re-seed after one was cancelled.
 		"""
-		if not self.fuel_tanker:
-			return
-
-		# Only seed when this tanker has no active ledger history yet
-		# (`refuse_opening_behind_movements` has already stopped a figure
-		# that would otherwise be lost here).
-		if self.has_active_ledger():
+		if not self.fuel_tanker or get_opening_datetime(self.fuel_tanker):
 			return
 
 		opening_entry = frappe.get_doc({
@@ -91,7 +115,7 @@ class FuelBalance(Document):
 			"posting_time": "00:00:00",
 			"site": self.site,
 			"fuel_tanker": self.fuel_tanker,
-			"utilization_type": "Opening Balance",
+			"utilization_type": OPENING_TYPE,
 			"previous_balance": 0,
 			"current_balance": self.balance or 0,
 		})

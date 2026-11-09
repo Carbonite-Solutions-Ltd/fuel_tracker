@@ -26,6 +26,8 @@ Submitting, cancelling or amending anything therefore keeps the whole ledger
 consistent — including the entries that already sat after the affected date.
 """
 
+from urllib.parse import urlencode
+
 import frappe
 from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, nowdate
@@ -274,18 +276,17 @@ def repost_tanker(fuel_tanker, from_datetime=None):
 def sync_fuel_balance(fuel_tanker):
 	"""Point the tanker's `Fuel Balance` at the tail of its ledger.
 
-	`Fuel Balance` is current state, so after any ledger change it is simply
-	the `current_balance` of the last submitted entry (0 when the ledger is
-	empty). A cancelled balance row is left alone — it no longer holds a live
-	figure, and touching it would fail because cancelled documents are frozen.
+	A submitted `Fuel Balance` is current state, so after any ledger change it
+	is simply the `current_balance` of the last submitted entry (0 when the
+	ledger is empty). Only the submitted row is touched: a draft is an opening
+	still being entered, and overwriting it would erase the figure being typed;
+	a cancelled row is frozen.
 	"""
 	if not fuel_tanker:
 		return
 
-	name = frappe.db.get_value("Fuel Balance", {"fuel_tanker": fuel_tanker}, "name")
+	name = frappe.db.get_value("Fuel Balance", {"fuel_tanker": fuel_tanker, "docstatus": 1}, "name")
 	if not name:
-		return
-	if frappe.db.get_value("Fuel Balance", name, "docstatus") == 2:
 		return
 
 	last = frappe.db.sql(
@@ -453,27 +454,42 @@ def warn_if_below_minimum(fuel_tanker, posting_datetime, delta):
 		)
 
 
-def get_or_create_fuel_balance(fuel_tanker, site, date):
-	"""Return the tanker's `Fuel Balance`, creating a draft one if needed.
+def validate_tanker_opened(fuel_tanker):
+	"""Refuse a movement on a tanker whose opening balance is not submitted.
 
-	Created as a draft on purpose: submitting a `Fuel Balance` seeds an
-	opening-balance `Fuel Entry`, and that must stay a deliberate user action
-	rather than a zero-litre side effect of the first movement.
+	A tanker's stock has to start from a figure. The first movement used to
+	create a blank draft Fuel Balance and carry on, so tankers ran from zero
+	with their real opening never entered — and once they had movements, the
+	opening could no longer be seeded. Submitting the Fuel Balance is now the
+	first thing that happens on a tanker; drafts (incoming mobile reports
+	included) can still be saved, only submitting waits for the opening.
 	"""
-	name = frappe.db.get_value("Fuel Balance", {"fuel_tanker": fuel_tanker}, "name")
-	if name:
-		return frappe.get_doc("Fuel Balance", name)
+	if not fuel_tanker or frappe.db.exists("Fuel Balance", {"fuel_tanker": fuel_tanker, "docstatus": 1}):
+		return
 
-	balance = frappe.get_doc({
-		"doctype": "Fuel Balance",
-		"fuel_tanker": fuel_tanker,
-		"balance": 0,
-		"site": site,
-		"date": date,
-	})
-	balance.flags.ignore_permissions = True
-	balance.insert()
-	return balance
+	draft = frappe.db.get_value("Fuel Balance", {"fuel_tanker": fuel_tanker, "docstatus": 0}, "name")
+	url = (
+		frappe.utils.get_url_to_form("Fuel Balance", draft)
+		if draft
+		else frappe.utils.get_url("/app/fuel-balance/new?" + urlencode({"fuel_tanker": fuel_tanker}))
+	)
+	frappe.throw(
+		_("Tanker {0} has no opening balance yet. Submit its Fuel Balance with the litres it held before recording any fuel movement on it.")
+		.format(frappe.bold(fuel_tanker))
+		+ '<br><br><a class="btn btn-primary btn-sm" href="{0}">{1}</a>'.format(url, _("Open Fuel Balance")),
+		title=_("Opening Balance Required"),
+	)
+
+
+def get_first_movement_datetime(fuel_tanker):
+	"""Posting moment of the tanker's earliest submitted movement, if any."""
+	return frappe.db.sql(
+		"""
+		SELECT MIN(posting_datetime) FROM `tabFuel Entry`
+		WHERE fuel_tanker = %s AND docstatus = 1 AND utilization_type != %s
+		""",
+		(fuel_tanker, OPENING_TYPE),
+	)[0][0]
 
 
 @frappe.whitelist()

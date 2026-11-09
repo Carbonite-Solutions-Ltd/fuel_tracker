@@ -37,6 +37,7 @@ from fuel_tracker.fuel_tracker.report.resource_fuel_summary.resource_fuel_summar
 	execute as summary_execute,
 )
 from fuel_tracker.tests.utils import (
+	OPENED_ON,
 	adjust,
 	balance,
 	dispense,
@@ -163,8 +164,17 @@ def movements(rows):
 
 
 def ledger_rows(**filters):
-	"""Fuel Ledger report as (data rows, the total row the desk shows)."""
+	"""Fuel Ledger report as (data rows, the total row the desk shows).
+
+	Leaves out the 0 L opening every test tanker gets on `OPENED_ON` (no fuel
+	can move on an unopened tanker): it is scaffolding, not part of the
+	scenario. Openings a scenario submits itself are kept.
+	"""
 	cols, rows = ledger_execute(filters)
+	rows = [
+		r for r in rows
+		if not (r["utilization_type"] == "Opening Balance" and str(r["date"]) == OPENED_ON and not r["current_balance"])
+	]
 	if not rows:
 		return [], None
 	return rows, report_total(cols, rows)
@@ -233,7 +243,7 @@ def build_site_week(prefix):
 	ns = frappe._dict(prefix=prefix)
 	ns.site_a = ensure_site(prefix + "-SITE-A")
 	ns.site_b = ensure_site(prefix + "-SITE-B")
-	ns.ta1 = make_tanker(prefix + "-TA1", site=ns.site_a, minimum_level=500).name
+	ns.ta1 = make_tanker(prefix + "-TA1", site=ns.site_a, minimum_level=500, opened=False).name
 	ns.ta2 = make_tanker(prefix + "-TA2", site=ns.site_a).name
 	ns.tb1 = make_tanker(prefix + "-TB1", site=ns.site_b, minimum_level=2000).name
 	ns.tankers = [ns.ta1, ns.ta2, ns.tb1]
@@ -481,8 +491,9 @@ class TestSiteWeek(ScenarioAssertions, FrappeTestCase):
 		# the doctype is the tail of the ledger, dated at its last movement
 		self.assertEqual(getdate(frappe.db.get_value("Fuel Balance", ns.ta1, "date")), getdate(day(-5)))
 		self.assertEqual(getdate(frappe.db.get_value("Fuel Balance", ns.tb1, "date")), getdate(day(-4)))
-		self.assertEqual(frappe.db.get_value("Fuel Balance", ns.ta1, "docstatus"), 1)
-		self.assertEqual(frappe.db.get_value("Fuel Balance", ns.ta2, "docstatus"), 0, "lazily created draft")
+		# every tanker's opening is submitted before anything moves on it
+		for tanker in ns.tankers:
+			self.assertEqual(frappe.db.get_value("Fuel Balance", tanker, "docstatus"), 1, tanker)
 
 	def test_ledger_report_rows_running_balance_and_totals(self):
 		ns = self.ns
@@ -1430,7 +1441,7 @@ class TestEdgeCases(ScenarioAssertions, FrappeTestCase):
 			kilometers=100, consumption=0.5)
 
 	def test_tanker_with_only_an_opening_balance(self):
-		tanker = make_tanker("TEST-FT-E2E-7G").name
+		tanker = make_tanker("TEST-FT-E2E-7G", opened=False).name
 		open_balance(tanker, 750, date=day(-3))
 
 		cols, rows = balance_execute({"to_date": today(), "fuel_tanker": [tanker]})

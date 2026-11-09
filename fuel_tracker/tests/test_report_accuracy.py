@@ -74,7 +74,7 @@ def row_for(rows, tanker):
 
 class TestFuelBalanceReport(FrappeTestCase):
 	def test_closing_matches_the_doctype_and_row_reconciles(self):
-		tanker = make_tanker("TEST-FT-RA-1", minimum_level=1000).name
+		tanker = make_tanker("TEST-FT-RA-1", minimum_level=1000, opened=False).name
 		open_balance(tanker, 200, date=day(-10))
 		supply(tanker, 120, date=day(-8), posting_time="08:00:00")
 		truck = make_resource("TEST-FT-RA-TRK1", "Truck", reading=100).name
@@ -121,7 +121,7 @@ class TestFuelBalanceReport(FrappeTestCase):
 		"""
 		from fuel_tracker.fuel_tracker.fuel_ledger import repost_tanker
 
-		tanker = make_tanker("TEST-FT-RA-3").name
+		tanker = make_tanker("TEST-FT-RA-3", opened=False).name
 		open_balance(tanker, 1000, date=day(-10))
 		supply(tanker, 250, date=day(-5), posting_time="08:00:00")
 		stray = supply(tanker, 500, date=day(-2), posting_time="08:00:00")

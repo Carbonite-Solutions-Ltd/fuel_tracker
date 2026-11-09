@@ -7,6 +7,9 @@ records a class created earlier in the same run, so give each test its own
 tanker/resource names.
 """
 
+from contextlib import ExitStack, contextmanager
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import flt, today
 
@@ -39,8 +42,17 @@ def ensure_site(name="TEST-FT-SITE"):
 	return name
 
 
-def make_tanker(name, site=None, threshold=0, minimum_level=0):
-	"""Create a Fuel Tanker via the new-tanker flow (auto-creates the Item)."""
+#: Default opening date for test tankers: well before any date a test posts on.
+OPENED_ON = "2000-01-01"
+
+
+def make_tanker(name, site=None, threshold=0, minimum_level=0, opened=True):
+	"""Create a Fuel Tanker via the new-tanker flow (auto-creates the Item).
+
+	Nothing can move on a tanker until its opening balance is submitted, so
+	the tanker is opened at 0 L on `OPENED_ON` unless `opened=False` — which
+	tests about opening balances themselves ask for.
+	"""
 	ensure_company()  # tanker item auto-create needs a company for the asset category
 	site = site or ensure_site()
 	if frappe.db.exists("Fuel Tanker", name):
@@ -55,6 +67,42 @@ def make_tanker(name, site=None, threshold=0, minimum_level=0):
 		"minimum_level": minimum_level,
 	})
 	doc.insert()
+	if opened:
+		open_tanker(doc.name)
+	return doc
+
+
+@contextmanager
+def before_openings_were_required():
+	"""Record movements on an unopened tanker, as the app used to allow.
+
+	Live sites still hold tankers whose movements came before any opening;
+	this recreates that state so the way such tankers get opened can be tested.
+	"""
+	modules = (
+		"fuel_tracker.fuel_tracker.doctype.fuel_supplied.fuel_supplied",
+		"fuel_tracker.fuel_tracker.doctype.fuel_used.fuel_used",
+		"fuel_tracker.fuel_tracker.doctype.fuel_adjustment.fuel_adjustment",
+		"fuel_tracker.fuel_tracker.doctype.fuel_transfer.fuel_transfer",
+		"fuel_tracker.fuel_tracker.doctype.fuel_entry.fuel_entry",
+	)
+	with ExitStack() as stack:
+		for module in modules:
+			stack.enter_context(patch(f"{module}.validate_tanker_opened"))
+		yield
+
+
+def open_tanker(tanker, balance=0, date=OPENED_ON):
+	"""Submit the tanker's opening balance — the first thing done on any tanker."""
+	doc = frappe.get_doc({
+		"doctype": "Fuel Balance",
+		"fuel_tanker": tanker,
+		"site": frappe.db.get_value("Fuel Tanker", tanker, "site"),
+		"balance": balance,
+		"date": date,
+	})
+	doc.insert()
+	doc.submit()
 	return doc
 
 

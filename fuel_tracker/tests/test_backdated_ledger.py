@@ -118,7 +118,7 @@ class TestBackdatedLedger(FrappeTestCase):
 		self.assertEqual(entry.current_balance, 420)
 
 	def test_entry_before_opening_balance_is_blocked(self):
-		tanker = make_tanker("TEST-FT-BD-6").name
+		tanker = make_tanker("TEST-FT-BD-6", opened=False).name
 
 		opening = frappe.get_doc({
 			"doctype": "Fuel Balance",

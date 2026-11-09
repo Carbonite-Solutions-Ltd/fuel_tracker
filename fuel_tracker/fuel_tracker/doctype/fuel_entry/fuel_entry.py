@@ -12,6 +12,7 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	repost_tanker,
 	validate_not_before_opening,
 	validate_not_future_dated,
+	validate_tanker_opened,
 )
 from fuel_tracker.fuel_tracker.resource_ledger import repost_resource_readings
 
@@ -65,6 +66,10 @@ class FuelEntry(Document):
 			)
 
 	def before_submit(self):
+		if self.utilization_type != OPENING_TYPE:
+			# the source documents check this first; this keeps it true for
+			# anything else that ever writes to the ledger
+			validate_tanker_opened(self.fuel_tanker)
 		validate_not_future_dated(self.date)
 		validate_not_before_opening(self.fuel_tanker, self.posting_datetime)
 		self.set_balances()
