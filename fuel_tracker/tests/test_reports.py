@@ -30,7 +30,7 @@ def submit_opening_balance(tanker, opening):
 
 class TestReports(FrappeTestCase):
 	def test_fuel_balance_report_tallies_with_doctype(self):
-		tanker = make_tanker("TEST-FT-RPT-1", minimum_level=1000).name
+		tanker = make_tanker("TEST-FT-RPT-1", minimum_level=1000, opened=False).name
 		submit_opening_balance(tanker, 200)
 		supply(tanker, 120)
 		truck = make_resource("TEST-FT-RPT-TRK1", "Truck", reading=100).name
@@ -57,7 +57,7 @@ class TestReports(FrappeTestCase):
 		self.assertEqual(rows[0]["status"], "OK")
 
 	def test_fuel_ledger_report_rows_totals_and_order(self):
-		tanker = make_tanker("TEST-FT-RPT-3").name
+		tanker = make_tanker("TEST-FT-RPT-3", opened=False).name
 		submit_opening_balance(tanker, 200)
 		supply(tanker, 120)
 		truck = make_resource("TEST-FT-RPT-TRK2", "Truck", reading=100).name

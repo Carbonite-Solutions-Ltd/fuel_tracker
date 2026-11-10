@@ -16,8 +16,8 @@ class TestFuelSupplied(FrappeTestCase):
 		doc = supply(tanker, 500)
 
 		self.assertEqual(balance(tanker), 500)
-		# the lazily created balance stays a draft (opening seeding is a user action)
-		self.assertEqual(frappe.db.get_value("Fuel Balance", tanker, "docstatus"), 0)
+		# the tanker's opening is submitted before anything can move on it
+		self.assertEqual(frappe.db.get_value("Fuel Balance", tanker, "docstatus"), 1)
 
 		entry = entry_for(doc)
 		self.assertIsNotNone(entry)

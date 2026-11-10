@@ -6,8 +6,8 @@ from frappe.utils import flt
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	MISCELLANEOUS_TYPE,
 	ensure_posting_time,
-	get_or_create_fuel_balance,
 	validate_not_future_dated,
+	validate_tanker_opened,
 	warn_if_below_minimum,
 	warn_if_ledger_goes_negative,
 )
@@ -62,6 +62,8 @@ class FuelUsed(Document):
 			self.sync_meter_status()
 
 	def before_submit(self):
+		# nothing moves on a tanker until its opening balance is submitted
+		validate_tanker_opened(self.fuel_tanker)
 		# Stamp the posting time now unless the user asked to backdate, so a
 		# draft left sitting cannot post behind entries recorded since.
 		self.posting_datetime = ensure_posting_time(self, refresh=True)
@@ -74,7 +76,6 @@ class FuelUsed(Document):
 	def on_submit(self):
 		posting_datetime = ensure_posting_time(self)
 
-		get_or_create_fuel_balance(self.fuel_tanker, self.site, self.date)
 		warn_if_ledger_goes_negative(
 			self.fuel_tanker,
 			posting_datetime,

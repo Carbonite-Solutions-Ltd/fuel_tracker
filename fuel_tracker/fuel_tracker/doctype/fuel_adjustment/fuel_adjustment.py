@@ -6,8 +6,8 @@ from frappe.utils import flt
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	ensure_posting_time,
 	get_balance_as_of,
-	get_or_create_fuel_balance,
 	validate_not_future_dated,
+	validate_tanker_opened,
 	warn_if_above_threshold,
 	warn_if_below_minimum,
 	warn_if_ledger_goes_negative,
@@ -33,6 +33,8 @@ class FuelAdjustment(Document):
 		ensure_posting_time(self)
 
 	def before_submit(self):
+		# nothing moves on a tanker until its opening balance is submitted
+		validate_tanker_opened(self.fuel_tanker)
 		# Stamp the posting time now unless the user asked to backdate. This is
 		# what makes a stale Measured Balance draft compare against the stock
 		# at submission rather than at the moment it was drafted.
@@ -45,7 +47,6 @@ class FuelAdjustment(Document):
 		posting_datetime = ensure_posting_time(self)
 		adjustment = flt(self.adjustment_litres)
 
-		get_or_create_fuel_balance(self.fuel_tanker, self.site, self.date)
 		warn_if_ledger_goes_negative(
 			self.fuel_tanker, posting_datetime, adjustment, source_label=_("This adjustment")
 		)
