@@ -76,6 +76,7 @@ Odometer/hour readings are date-aware in exactly the way balances are, and for t
 - `repost_resource_readings()` rewrites each later document's `previous_*` and its entry's `diff_*`, then points `Resource` at the newest reading. Submitting and cancelling both call it.
 - `get_anchor_reading()` deliberately consults **cancelled** documents. Cancelling every fill must restore the reading the resource started at, and by then only the cancelled rows still record it — falling back to `Resource.current_odometer` would hand back the reading being unwound.
 - Resources with `has_faulty_meter` are skipped entirely: they neither supply nor consume a reading, and the gap simply spans them.
+- `correct_reading()` (the **Correct Reading** button on a submitted `Fuel Used`) is the one sanctioned way to fix a mistyped reading: Fuel Tracker Manager / System Manager only, reason required, checked against both neighbours, then `repost_resource_readings` from that fill — no fuel moves and nothing is cancelled. Audit comments land on the fill and the resource. The role gate is an explicit `frappe.get_roles()` check, **not** `frappe.only_for`, which returns early under tests. `Resource.reset_reading` only matters before a resource's first fill: after that the ledger ignores `Resource.current_*` and the next repost overwrites it.
 
 ### Faulty meters
 

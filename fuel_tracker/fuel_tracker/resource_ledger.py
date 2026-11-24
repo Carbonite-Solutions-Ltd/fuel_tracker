@@ -305,3 +305,73 @@ def sync_resource_reading(resource, resource_type=None):
 	doc.set(current_field, latest)
 	doc.flags.from_fuel_transaction = True
 	doc.save(ignore_permissions=True)
+
+
+#: Roles allowed to correct a reading on a submitted `Fuel Used`.
+READING_CORRECTION_ROLES = ("Fuel Tracker Manager", "System Manager")
+
+
+def correct_reading(doc, new_reading, reason):
+	"""Fix a mistyped reading on a submitted `Fuel Used`, in place.
+
+	Without this the only fix was cancelling the fill's `Fuel Entry`, which
+	unwinds and reposts the tanker's fuel too — heavy-handed for a typo, and
+	a manager's job. No litres move here: only the reading changes, and the
+	reading ledger is reposted from this document onward, so the distance on
+	its own entry and the next fill's, every later document's previous
+	reading and the `Resource`'s current reading all follow.
+
+	The new reading must still sit between the fills either side of it,
+	exactly as it would have had to at submission. An audit comment records
+	the old and new values, the user and the reason, on the document and on
+	the resource.
+	"""
+	# not frappe.only_for: that returns early under tests, so the gate could
+	# never be tested. Administrator holds every role, as only_for allows.
+	if frappe.session.user != "Administrator" and set(READING_CORRECTION_ROLES).isdisjoint(frappe.get_roles()):
+		frappe.throw(
+			_("Only a Fuel Tracker Manager can correct a submitted reading."),
+			frappe.PermissionError,
+		)
+
+	if doc.docstatus != 1:
+		frappe.throw(_("Only a submitted Fuel Used can have its reading corrected. Edit the draft instead."))
+	if doc.is_miscellaneous():
+		frappe.throw(_("A miscellaneous issue has no resource, so it has no reading to correct."))
+	if doc.meter_faulty:
+		frappe.throw(_("This fill was recorded against a faulty meter, so it carries no reading to correct."))
+
+	fields = get_reading_fields(doc.resource_type)
+	if not fields:
+		frappe.throw(_("Readings apply only to Truck or Equipment resources."))
+
+	reading_field, _previous_field, _diff_field, _current_field = fields
+	label = _("Odometer (KM)") if doc.resource_type == "Truck" else _("Hours")
+
+	reason = (reason or "").strip()
+	if not reason:
+		frappe.throw(_("A reason is required to correct a reading."))
+
+	new_reading = flt(new_reading)
+	old_reading = flt(doc.get(reading_field))
+	if new_reading <= 0:
+		frappe.throw(_("The corrected {0} reading must be greater than zero.").format(label))
+	if new_reading == old_reading:
+		frappe.throw(_("The corrected reading is the same as the one recorded."))
+
+	# checked against the neighbours as at submission; throws if it doesn't fit
+	doc.set(reading_field, new_reading)
+	validate_reading_fits_sequence(doc, doc.resource_type)
+
+	# a deliberate user edit, so `modified` is bumped (ledger queries never
+	# order by it); the derived figures below are reposted without bumping
+	frappe.db.set_value("Fuel Used", doc.name, reading_field, new_reading)
+	repost_resource_readings(doc.resource, doc.resource_type, doc.posting_datetime)
+
+	note = _("Reading corrected on {0}: {1} changed from {2} to {3} by {4}. Reason: {5}").format(
+		doc.name, label, old_reading, new_reading, frappe.session.user, reason
+	)
+	doc.add_comment("Comment", note)
+	frappe.get_doc("Resource", doc.resource).add_comment("Comment", note)
+
+	return new_reading

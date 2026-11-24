@@ -5,6 +5,7 @@ frappe.ui.form.on("Fuel Used", {
     refresh(frm) {
         show_entry_notice(frm);
         show_balance_on_date(frm);
+        add_correct_reading_button(frm);
     },
     entry_type(frm) {
         // A miscellaneous issue fuels no resource, so drop any that was
@@ -134,4 +135,61 @@ function warn_if_future(frm) {
         });
         frm.set_value("date", frappe.datetime.get_today());
     }
+}
+
+// Roles allowed to correct a submitted reading; mirrors
+// READING_CORRECTION_ROLES in resource_ledger.py, which is authoritative.
+const READING_CORRECTION_ROLES = ["Fuel Tracker Manager", "System Manager"];
+
+function add_correct_reading_button(frm) {
+    if (frm.doc.docstatus !== 1 || is_miscellaneous(frm) || frm.doc.meter_faulty) return;
+    if (!["Truck", "Equipment"].includes(frm.doc.resource_type)) return;
+    if (!READING_CORRECTION_ROLES.some((role) => frappe.user.has_role(role))) return;
+
+    frm.add_custom_button(__("Correct Reading"), () => correct_reading_dialog(frm));
+}
+
+function correct_reading_dialog(frm) {
+    const is_truck = frm.doc.resource_type === "Truck";
+    const label = is_truck ? __("Odometer (KM)") : __("Hours");
+    const recorded = is_truck ? frm.doc.odometer_km : frm.doc.hours_copy;
+
+    const dialog = new frappe.ui.Dialog({
+        title: __("Correct {0}", [label]),
+        fields: [
+            {
+                fieldname: "recorded",
+                label: __("Recorded Reading"),
+                fieldtype: "Float",
+                default: recorded,
+                read_only: 1,
+            },
+            {
+                fieldname: "new_reading",
+                label: __("Correct Reading"),
+                fieldtype: "Float",
+                reqd: 1,
+                description: __("Must sit between the readings of the fills before and after this one. No fuel moves; later fills are re-measured from it."),
+            },
+            {
+                fieldname: "reason",
+                label: __("Reason"),
+                fieldtype: "Small Text",
+                reqd: 1,
+                description: __("e.g. digit mistyped, read from the wrong vehicle"),
+            },
+        ],
+        primary_action_label: __("Correct"),
+        primary_action(values) {
+            frm.call("correct_reading", {
+                new_reading: values.new_reading,
+                reason: values.reason,
+            }).then(() => {
+                dialog.hide();
+                frappe.show_alert({ message: __("Reading corrected"), indicator: "green" });
+                frm.reload_doc();
+            });
+        },
+    });
+    dialog.show();
 }
