@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
+	cancel_ledger_entries,
 	ensure_posting_time,
 	get_balance_as_of,
 	validate_not_future_dated,
@@ -54,6 +55,9 @@ class FuelAdjustment(Document):
 		warn_if_below_minimum(self.fuel_tanker, posting_datetime, adjustment)
 
 		self.create_fuel_entry()
+
+	def on_cancel(self):
+		cancel_ledger_entries(self)
 
 	def validate_reason_remarks(self):
 		if self.reason == "Other" and not (self.remarks or "").strip():

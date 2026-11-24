@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
+	cancel_ledger_entries,
 	ensure_posting_time,
 	validate_not_future_dated,
 	validate_tanker_opened,
@@ -38,6 +39,7 @@ class FuelSupplied(Document):
 		self.update_request_status()
 
 	def on_cancel(self):
+		cancel_ledger_entries(self)
 		self.update_request_status()
 
 	def validate_fuel_quantity(self):
