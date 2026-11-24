@@ -5,6 +5,7 @@ from frappe.utils import flt
 
 from fuel_tracker.fuel_tracker.fuel_ledger import (
 	MISCELLANEOUS_TYPE,
+	cancel_ledger_entries,
 	ensure_posting_time,
 	validate_not_future_dated,
 	validate_tanker_opened,
@@ -113,6 +114,10 @@ class FuelUsed(Document):
 		cancelled — only the reading ledger is reposted.
 		"""
 		return correct_reading(self, new_reading, reason, previous_reading)
+
+	def on_cancel(self):
+		# the entry reposts the tanker and the reading sequence
+		cancel_ledger_entries(self)
 
 	def is_miscellaneous(self):
 		return self.entry_type == MISCELLANEOUS_TYPE

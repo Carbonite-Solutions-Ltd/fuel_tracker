@@ -60,28 +60,41 @@ class TestFuelEntry(FrappeTestCase):
 		entry_for(second).cancel()
 		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 1000)
 
-	def test_direct_cancel_of_sources_blocked(self):
+	def test_direct_cancel_of_a_source_cancels_its_entry(self):
+		"""Cancelling the source works too, and unwinds through its entry.
+
+		It used to be refused (the entry still linked to it), which is what
+		made bulk cancel from the list fail for every document.
+		"""
 		tanker = make_tanker("TEST-FT-FE-4").name
 		truck = make_resource("TEST-FT-FE-TRK3", "Truck", reading=100).name
 
 		sup = supply(tanker, 100)
 		dis = dispense(tanker, truck, 10, odometer_km=150)
 		adj = adjust(tanker, mode="Quantity", quantity=-5)
+		self.assertEqual(balance(tanker), 85)
 
-		for doc in (sup, dis, adj):
-			with self.assertRaises(frappe.LinkExistsError):
-				frappe.get_doc(doc.doctype, doc.name).cancel()
+		for doc in (adj, dis, sup):
+			entry = entry_for(doc).name
+			frappe.get_doc(doc.doctype, doc.name).cancel()
+			self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "docstatus"), 2)
+			self.assertEqual(frappe.db.get_value("Fuel Entry", entry, "docstatus"), 2)
 
-	def test_direct_cancel_of_miscellaneous_issue_blocked(self):
+		self.assertEqual(balance(tanker), 0)
+		self.assertEqual(frappe.db.get_value("Resource", truck, "current_odometer"), 100)
+
+	def test_direct_cancel_of_miscellaneous_issue_cancels_its_entry(self):
 		from fuel_tracker.tests.utils import issue_miscellaneous
 
 		tanker = make_tanker("TEST-FT-FE-5").name
 		supply(tanker, 100)
 		misc = issue_miscellaneous(tanker, 10)
+		entry = entry_for(misc).name
 
-		# like every other source, it is unwound from its ledger entry
-		with self.assertRaises(frappe.LinkExistsError):
-			frappe.get_doc("Fuel Used", misc.name).cancel()
+		frappe.get_doc("Fuel Used", misc.name).cancel()
+
+		self.assertEqual(frappe.db.get_value("Fuel Entry", entry, "docstatus"), 2)
+		self.assertEqual(balance(tanker), 100)
 
 	def test_hand_made_ledger_lines_are_refused(self):
 		"""Only source documents write to the ledger."""

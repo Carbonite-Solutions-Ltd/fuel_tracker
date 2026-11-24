@@ -501,3 +501,38 @@ def get_tanker_balance_on(fuel_tanker, date, posting_time=None):
 	"""
 	frappe.has_permission("Fuel Entry", throw=True)
 	return get_balance_as_of(fuel_tanker, make_posting_datetime(date, posting_time))
+
+
+#: The `Fuel Entry` field that links back to each kind of source document.
+LEDGER_LINK_FIELDS = {
+	"Fuel Supplied": "fuel_supplied_id",
+	"Fuel Used": "fuel_utilization_id",
+	"Fuel Adjustment": "fuel_adjustment_id",
+	"Fuel Transfer": "fuel_transfer_id",
+}
+
+
+def cancel_ledger_entries(doc):
+	"""Cancel the submitted `Fuel Entry` lines a source document created.
+
+	Called from a source document's `on_cancel`. Without it, cancelling the
+	source directly was refused by Frappe's linked-document check — the entry
+	still pointed at it — so only cancelling from the `Fuel Entry` side
+	worked. Frappe runs `on_cancel` before that check, so cancelling the entry
+	here clears it. The desk form offered "Cancel All" to get round this, but
+	bulk cancel from a list has no such step: every document failed, and from
+	20 documents up (run in the background) it failed without a word.
+
+	The entry's own `on_cancel` does the unwinding (tanker repost, reading
+	repost). Its cascade back to this document sees it already cancelled and
+	stops there. Permissions are skipped as they are when the entry is
+	created: being allowed to cancel the source is what authorises it. No
+	commit — the whole cancel stays one transaction.
+	"""
+	link_field = LEDGER_LINK_FIELDS[doc.doctype]
+	for name in frappe.get_all(
+		"Fuel Entry", filters={link_field: doc.name, "docstatus": 1}, pluck="name"
+	):
+		entry = frappe.get_doc("Fuel Entry", name)
+		entry.flags.ignore_permissions = True
+		entry.cancel()
