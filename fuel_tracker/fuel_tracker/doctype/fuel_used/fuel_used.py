@@ -12,6 +12,8 @@ from fuel_tracker.fuel_tracker.fuel_ledger import (
 	warn_if_ledger_goes_negative,
 )
 from fuel_tracker.fuel_tracker.resource_ledger import (
+	correct_reading,
+	get_previous_fill,
 	get_previous_reading,
 	get_reading_fields,
 	repost_resource_readings,
@@ -93,6 +95,24 @@ class FuelUsed(Document):
 		# against the fill that follows it, and must not drag the resource's
 		# current reading backwards.
 		repost_resource_readings(self.resource, self.resource_type, self.posting_datetime)
+
+	def onload(self):
+		# tells the Correct Reading dialog whether the previous reading is
+		# this fill's to correct (first fill: it is the opening reading) or
+		# belongs to the fill before it
+		if self.docstatus == 1 and not self.is_miscellaneous() and not self.meter_faulty:
+			self.set_onload("previous_fill", get_previous_fill(self))
+
+	@frappe.whitelist()
+	def correct_reading(self, new_reading=None, reason=None, previous_reading=None):
+		"""Fix a mistyped odometer/hours reading after submission.
+
+		Fuel Tracker Manager (or System Manager) only; see
+		`resource_ledger.correct_reading`. `previous_reading` can only be
+		changed on a resource's first fill. No fuel moves and nothing is
+		cancelled — only the reading ledger is reposted.
+		"""
+		return correct_reading(self, new_reading, reason, previous_reading)
 
 	def is_miscellaneous(self):
 		return self.entry_type == MISCELLANEOUS_TYPE
