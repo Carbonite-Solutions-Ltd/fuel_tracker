@@ -153,23 +153,42 @@ function correct_reading_dialog(frm) {
     const is_truck = frm.doc.resource_type === "Truck";
     const label = is_truck ? __("Odometer (KM)") : __("Hours");
     const recorded = is_truck ? frm.doc.odometer_km : frm.doc.hours_copy;
+    const recorded_previous = is_truck ? frm.doc.previous_odometer_km : frm.doc.previous_hours_copy;
+    // set in FuelUsed.onload; empty means this is the resource's first fill,
+    // so its previous reading is the opening reading and is corrected here
+    const previous_fill = (frm.doc.__onload || {}).previous_fill;
+
+    const previous_field = previous_fill
+        ? {
+            fieldname: "previous_reading",
+            label: __("Previous Reading"),
+            fieldtype: "Float",
+            default: recorded_previous,
+            read_only: 1,
+            description: __("This is the reading recorded on {0}. To change it, correct that fill.", [
+                `<a href="/app/fuel-used/${encodeURIComponent(previous_fill)}">${frappe.utils.escape_html(previous_fill)}</a>`,
+            ]),
+        }
+        : {
+            fieldname: "previous_reading",
+            label: __("Opening Reading"),
+            fieldtype: "Float",
+            default: recorded_previous,
+            reqd: 1,
+            description: __("This is the resource's first fill, so its previous reading is the opening reading the history starts from."),
+        };
 
     const dialog = new frappe.ui.Dialog({
         title: __("Correct {0}", [label]),
         fields: [
-            {
-                fieldname: "recorded",
-                label: __("Recorded Reading"),
-                fieldtype: "Float",
-                default: recorded,
-                read_only: 1,
-            },
+            previous_field,
             {
                 fieldname: "new_reading",
-                label: __("Correct Reading"),
+                label: __("Reading on This Fill"),
                 fieldtype: "Float",
+                default: recorded,
                 reqd: 1,
-                description: __("Must sit between the readings of the fills before and after this one. No fuel moves; later fills are re-measured from it."),
+                description: __("Must sit between the readings either side of this fill. No fuel moves; later fills are re-measured from it."),
             },
             {
                 fieldname: "reason",
@@ -181,10 +200,10 @@ function correct_reading_dialog(frm) {
         ],
         primary_action_label: __("Correct"),
         primary_action(values) {
-            frm.call("correct_reading", {
-                new_reading: values.new_reading,
-                reason: values.reason,
-            }).then(() => {
+            const args = { new_reading: values.new_reading, reason: values.reason };
+            if (!previous_fill) args.previous_reading = values.previous_reading;
+
+            frm.call("correct_reading", args).then(() => {
                 dialog.hide();
                 frappe.show_alert({ message: __("Reading corrected"), indicator: "green" });
                 frm.reload_doc();

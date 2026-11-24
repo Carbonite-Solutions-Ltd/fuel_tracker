@@ -311,20 +311,74 @@ def sync_resource_reading(resource, resource_type=None):
 READING_CORRECTION_ROLES = ("Fuel Tracker Manager", "System Manager")
 
 
-def correct_reading(doc, new_reading, reason):
+def get_previous_fill(doc):
+	"""The submitted, metered fill immediately before `doc`, or None.
+
+	None means `doc` is the resource's first fill: its previous reading is
+	then the opening reading the sequence is anchored on, not another fill's.
+	"""
+	row = frappe.db.sql(
+		"""
+		SELECT name
+		FROM `tabFuel Used`
+		WHERE resource = %(resource)s AND docstatus = 1 AND IFNULL(meter_faulty, 0) = 0
+			AND name != %(name)s
+			AND (posting_datetime < %(posting_datetime)s
+				OR (posting_datetime = %(posting_datetime)s AND creation < %(creation)s))
+		ORDER BY posting_datetime DESC, creation DESC
+		LIMIT 1
+		""",
+		{
+			"resource": doc.resource,
+			"name": doc.name,
+			"posting_datetime": doc.posting_datetime,
+			"creation": doc.creation,
+		},
+	)
+	return row[0][0] if row else None
+
+
+def get_anchor_document(resource):
+	"""The document `get_anchor_reading` takes the opening reading from.
+
+	The earliest metered fill, submitted *or cancelled* — see
+	`get_anchor_reading` for why cancelled ones count.
+	"""
+	row = frappe.db.sql(
+		"""
+		SELECT name
+		FROM `tabFuel Used`
+		WHERE resource = %s AND docstatus IN (1, 2) AND IFNULL(meter_faulty, 0) = 0
+		ORDER BY posting_datetime ASC, creation ASC
+		LIMIT 1
+		""",
+		resource,
+	)
+	return row[0][0] if row else None
+
+
+def correct_reading(doc, new_reading=None, reason=None, previous_reading=None):
 	"""Fix a mistyped reading on a submitted `Fuel Used`, in place.
 
 	Without this the only fix was cancelling the fill's `Fuel Entry`, which
 	unwinds and reposts the tanker's fuel too — heavy-handed for a typo, and
-	a manager's job. No litres move here: only the reading changes, and the
+	a manager's job. No litres move here: only readings change, and the
 	reading ledger is reposted from this document onward, so the distance on
 	its own entry and the next fill's, every later document's previous
 	reading and the `Resource`'s current reading all follow.
 
-	The new reading must still sit between the fills either side of it,
-	exactly as it would have had to at submission. An audit comment records
-	the old and new values, the user and the reason, on the document and on
-	the resource.
+	`new_reading` is this fill's own reading. It must still sit between the
+	fills either side of it, exactly as it would have had to at submission.
+
+	`previous_reading` may only be changed on a resource's **first** fill. On
+	any other fill the previous reading is simply the reading of the fill
+	before it, so that is the one to correct. On the first fill it is the
+	opening reading the whole sequence is anchored on, which nothing else can
+	reach: it is written to the anchor document (`get_anchor_document`), so
+	the ledger starts from it from then on.
+
+	An audit comment records the old and new values, the user and the reason,
+	on the document and on the resource.
 	"""
 	# not frappe.only_for: that returns early under tests, so the gate could
 	# never be tested. Administrator holds every role, as only_for allows.
@@ -345,33 +399,73 @@ def correct_reading(doc, new_reading, reason):
 	if not fields:
 		frappe.throw(_("Readings apply only to Truck or Equipment resources."))
 
-	reading_field, _previous_field, _diff_field, _current_field = fields
+	reading_field, previous_field, _diff_field, _current_field = fields
 	label = _("Odometer (KM)") if doc.resource_type == "Truck" else _("Hours")
 
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("A reason is required to correct a reading."))
 
-	new_reading = flt(new_reading)
 	old_reading = flt(doc.get(reading_field))
-	if new_reading <= 0:
+	old_previous = flt(doc.get(previous_field))
+	reading = old_reading if new_reading in (None, "") else flt(new_reading)
+	previous = old_previous if previous_reading in (None, "") else flt(previous_reading)
+
+	reading_changed = reading != old_reading
+	previous_changed = previous != old_previous
+	if not reading_changed and not previous_changed:
+		frappe.throw(_("The corrected readings are the same as the ones recorded."))
+	if reading <= 0:
 		frappe.throw(_("The corrected {0} reading must be greater than zero.").format(label))
-	if new_reading == old_reading:
-		frappe.throw(_("The corrected reading is the same as the one recorded."))
 
-	# checked against the neighbours as at submission; throws if it doesn't fit
-	doc.set(reading_field, new_reading)
-	validate_reading_fits_sequence(doc, doc.resource_type)
+	if previous_changed:
+		previous_fill = get_previous_fill(doc)
+		if previous_fill:
+			frappe.throw(
+				_("The previous reading on this fill is the reading recorded on {0}. Correct that fill instead.")
+				.format(frappe.get_desk_link("Fuel Used", previous_fill)),
+				title=_("Not the First Fill"),
+			)
+		# 0 is how the ledger says "no opening reading" (get_anchor_reading
+		# would fall back to the resource's live reading), so it can't be set
+		if previous <= 0:
+			frappe.throw(_("The opening {0} reading must be greater than zero.").format(label))
+		if reading < previous:
+			frappe.throw(
+				_("{0} reading {1} is lower than the opening reading {2}.").format(label, reading, previous),
+				title=_("Reading Goes Backwards"),
+			)
+		following = get_next_reading(doc.resource, doc.resource_type, doc.posting_datetime, exclude=doc.name)
+		if following is not None and reading > flt(following):
+			frappe.throw(
+				_("{0} reading {1} is higher than the {2} already recorded after it on this resource ({3}). Check the date and the reading.")
+				.format(label, reading, label, flt(following)),
+				title=_("Reading Overtakes a Later One"),
+			)
+	else:
+		# checked against the neighbours as at submission; throws if it doesn't fit
+		doc.set(reading_field, reading)
+		validate_reading_fits_sequence(doc, doc.resource_type)
 
-	# a deliberate user edit, so `modified` is bumped (ledger queries never
-	# order by it); the derived figures below are reposted without bumping
-	frappe.db.set_value("Fuel Used", doc.name, reading_field, new_reading)
+	# everything is validated before anything is written. These are
+	# deliberate user edits, so `modified` is bumped (ledger queries never
+	# order by it); the derived figures are reposted without bumping it
+	if previous_changed:
+		for name in {get_anchor_document(doc.resource), doc.name}:
+			frappe.db.set_value("Fuel Used", name, previous_field, previous)
+	if reading_changed:
+		frappe.db.set_value("Fuel Used", doc.name, reading_field, reading)
 	repost_resource_readings(doc.resource, doc.resource_type, doc.posting_datetime)
 
-	note = _("Reading corrected on {0}: {1} changed from {2} to {3} by {4}. Reason: {5}").format(
-		doc.name, label, old_reading, new_reading, frappe.session.user, reason
+	changes = []
+	if previous_changed:
+		changes.append(_("opening {0} changed from {1} to {2}").format(label, old_previous, previous))
+	if reading_changed:
+		changes.append(_("{0} changed from {1} to {2}").format(label, old_reading, reading))
+	note = _("Reading corrected on {0}: {1} by {2}. Reason: {3}").format(
+		doc.name, "; ".join(changes), frappe.session.user, reason
 	)
 	doc.add_comment("Comment", note)
 	frappe.get_doc("Resource", doc.resource).add_comment("Comment", note)
 
-	return new_reading
+	return reading
