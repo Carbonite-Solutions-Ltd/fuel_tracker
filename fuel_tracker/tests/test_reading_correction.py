@@ -351,3 +351,67 @@ class TestOpeningReadingCorrection(FrappeTestCase):
 		finally:
 			frappe.set_user("Administrator")
 		self.assertEqual(frappe.db.get_value("Fuel Used", first.name, "previous_odometer_km"), 1000)
+
+
+class TestClashingFillIsNamed(FrappeTestCase):
+	"""A rejected reading names the fill it clashes with.
+
+	Usually that fill holds the mistake — a reading keyed too high blocks
+	every correct one after it — and it is the one to correct.
+	"""
+
+	def setUp(self):
+		frappe.set_user("Administrator")
+
+	def setup_truck(self, suffix, opening=1000):
+		tanker = make_tanker("TEST-FT-RCN-{0}".format(suffix)).name
+		truck = make_resource("TEST-FT-RCN-TRK{0}".format(suffix), "Truck", reading=opening).name
+		supply(tanker, 5000, date=day(-30), posting_time="08:00:00")
+		return tanker, truck
+
+	def test_backwards_reading_names_the_fill_before(self):
+		tanker, truck = self.setup_truck(1)
+		typo = dispense(tanker, truck, 90, odometer_km=17500, date=day(-6), posting_time="08:00:00")
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			dispense(tanker, truck, 80, odometer_km=2000, date=day(-2), posting_time="08:00:00")
+		self.assertIn(typo.name, str(caught.exception))
+		self.assertIn("Correct Reading", str(caught.exception))
+
+	def test_overtaking_reading_names_the_fill_after(self):
+		tanker, truck = self.setup_truck(2)
+		dispense(tanker, truck, 100, odometer_km=1500, date=day(-10), posting_time="08:00:00")
+		later = dispense(tanker, truck, 100, odometer_km=2000, date=day(-2), posting_time="08:00:00")
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			dispense(tanker, truck, 50, odometer_km=2500, date=day(-6), posting_time="08:00:00")
+		self.assertIn(later.name, str(caught.exception))
+
+	def test_reading_below_the_opening_names_no_fill(self):
+		tanker, truck = self.setup_truck(3, opening=1200)
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			dispense(tanker, truck, 20, odometer_km=1150)
+		self.assertIn("opening reading", str(caught.exception))
+		self.assertNotIn("Correct Reading", str(caught.exception))
+
+	def test_draft_blocked_by_a_typo_submits_once_the_typo_is_corrected(self):
+		"""The workflow: keep the new fill as a draft, fix the old one, submit."""
+		tanker, truck = self.setup_truck(4)
+		dispense(tanker, truck, 100, odometer_km=1500, date=day(-10), posting_time="08:00:00")
+		typo = dispense(tanker, truck, 90, odometer_km=17500, date=day(-6), posting_time="08:00:00")
+
+		draft = dispense(tanker, truck, 80, odometer_km=2000, date=day(-2), posting_time="08:00:00", submit=False)
+		with self.assertRaises(frappe.ValidationError):
+			draft.submit()
+		draft = frappe.get_doc("Fuel Used", draft.name)
+		self.assertEqual(draft.docstatus, 0, "the draft and its reading survive")
+		self.assertEqual(draft.odometer_km, 2000)
+
+		typo.correct_reading(1750, "extra zero keyed")
+		draft.submit()
+
+		draft.reload()
+		self.assertEqual(draft.previous_odometer_km, 1750)
+		self.assertEqual(entry_for(draft).diff_odometer, 250)
+		self.assertEqual(reading(truck), 2000)

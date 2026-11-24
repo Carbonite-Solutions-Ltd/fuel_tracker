@@ -193,6 +193,44 @@ def get_next_reading(resource, resource_type, posting_datetime, exclude=None, cr
 	return flt(row[0][0]) if row else None
 
 
+def get_neighbouring_fill(resource, posting_datetime, exclude=None, after=False):
+	"""The submitted, metered fill either side of a moment, or None.
+
+	Same cut-off as `get_previous_reading` / `get_next_reading` (time only, no
+	creation tiebreak), so it names exactly the fill those readings came from.
+	"""
+	values = {"resource": resource, "posting_datetime": posting_datetime, "exclude": exclude or ""}
+	row = frappe.db.sql(
+		"""
+		SELECT name
+		FROM `tabFuel Used`
+		WHERE resource = %(resource)s AND docstatus = 1 AND IFNULL(meter_faulty, 0) = 0
+			AND name != %(exclude)s
+			AND posting_datetime {op} %(posting_datetime)s
+		ORDER BY posting_datetime {order}, creation {order}
+		LIMIT 1
+		""".format(op=">" if after else "<", order="ASC" if after else "DESC"),
+		values,
+	)
+	return row[0][0] if row else None
+
+
+def clashing_fill_hint(fill):
+	"""Point at the fill a reading clashes with, and how to fix it if it's wrong.
+
+	A reading keyed too high on one fill makes every correct fill after it
+	look as though it goes backwards; without the fill's name the person
+	submitting has no way to find the real mistake.
+	"""
+	if not fill:
+		return ""
+	return "<br><br>" + _(
+		"If the reading on {0} is the one that is wrong, correct it there first (Correct Reading, Fuel Tracker Manager), then try again. A draft keeps its reading in the meantime."
+	).format(frappe.bold(fill)) + '<br><br><a class="btn btn-primary btn-sm" href="{0}">{1}</a>'.format(
+		frappe.utils.get_url_to_form("Fuel Used", fill), _("Open {0}").format(fill)
+	)
+
+
 def validate_reading_fits_sequence(doc, resource_type):
 	"""A reading must not go backwards, in either direction.
 
@@ -200,6 +238,9 @@ def validate_reading_fits_sequence(doc, resource_type):
 	document can be slotted into the middle of the history as long as it sits
 	between the fills either side of it. Measuring against the newest reading
 	is what used to make backdating impossible.
+
+	The error names the fill it clashes with: often that fill is the one with
+	the mistake, and it is the one to correct.
 	"""
 	fields = get_reading_fields(resource_type)
 	if not fields:
@@ -213,19 +254,25 @@ def validate_reading_fits_sequence(doc, resource_type):
 		doc.resource, resource_type, doc.posting_datetime, exclude=doc.name
 	)
 	if reading < flt(previous):
-		frappe.throw(
-			_("{0} reading {1} is lower than the {2} recorded before it on this resource ({3}).")
-			.format(label, reading, label, flt(previous)),
-			title=_("Reading Goes Backwards"),
+		fill = get_neighbouring_fill(doc.resource, doc.posting_datetime, exclude=doc.name)
+		message = (
+			_("{0} reading {1} is lower than the {2} recorded on {3} before it ({4}).")
+			.format(label, reading, label, frappe.bold(fill), flt(previous))
+			if fill
+			else _("{0} reading {1} is lower than this resource's opening reading ({2}).")
+			.format(label, reading, flt(previous))
 		)
+		frappe.throw(message + clashing_fill_hint(fill), title=_("Reading Goes Backwards"))
 
 	following = get_next_reading(
 		doc.resource, resource_type, doc.posting_datetime, exclude=doc.name
 	)
 	if following is not None and reading > flt(following):
+		fill = get_neighbouring_fill(doc.resource, doc.posting_datetime, exclude=doc.name, after=True)
 		frappe.throw(
-			_("{0} reading {1} is higher than the {2} already recorded after it on this resource ({3}). Check the date and the reading.")
-			.format(label, reading, label, flt(following)),
+			_("{0} reading {1} is higher than the {2} already recorded on {3} after it ({4}). Check the date and the reading.")
+			.format(label, reading, label, frappe.bold(fill), flt(following))
+			+ clashing_fill_hint(fill),
 			title=_("Reading Overtakes a Later One"),
 		)
 

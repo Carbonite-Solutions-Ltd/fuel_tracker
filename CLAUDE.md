@@ -72,7 +72,7 @@ A `Resource` is either a **`Truck`** (tracked by `odometer_km`) or **`Equipment`
 Odometer/hour readings are date-aware in exactly the way balances are, and for the same reason: a `Fuel Used` used to take its previous reading from the live `Resource` (the newest reading of all), so backdating a fill was rejected as "going backwards" and its distance was measured from the wrong point.
 
 - The previous reading is the one recorded immediately *before* a document's posting moment, over submitted `Fuel Used` ordered by `(posting_datetime, creation)` — hence `Fuel Used` carries its own `posting_datetime`.
-- A reading is validated against **both** neighbours, so a document slotted into the middle only has to sit between the fills either side of it.
+- A reading is validated against **both** neighbours, so a document slotted into the middle only has to sit between the fills either side of it. The error names the clashing fill (`get_neighbouring_fill`) with a link to it: a reading keyed too high blocks every correct fill after it, so that fill is usually the one to correct. Readings are only checked at submit, so the blocked fill waits as a draft meanwhile.
 - `repost_resource_readings()` rewrites each later document's `previous_*` and its entry's `diff_*`, then points `Resource` at the newest reading. Submitting and cancelling both call it.
 - `get_anchor_reading()` deliberately consults **cancelled** documents. Cancelling every fill must restore the reading the resource started at, and by then only the cancelled rows still record it — falling back to `Resource.current_odometer` would hand back the reading being unwound.
 - Resources with `has_faulty_meter` are skipped entirely: they neither supply nor consume a reading, and the gap simply spans them.

@@ -141,12 +141,38 @@ function warn_if_future(frm) {
 // READING_CORRECTION_ROLES in resource_ledger.py, which is authoritative.
 const READING_CORRECTION_ROLES = ["Fuel Tracker Manager", "System Manager"];
 
+// Set by "Correct Previous Reading": the fill to open the dialog on once
+// its form has loaded. Lives at module level because the form script stays
+// loaded across route changes in the desk.
+let pending_correction = null;
+
 function add_correct_reading_button(frm) {
     if (frm.doc.docstatus !== 1 || is_miscellaneous(frm) || frm.doc.meter_faulty) return;
     if (!["Truck", "Equipment"].includes(frm.doc.resource_type)) return;
     if (!READING_CORRECTION_ROLES.some((role) => frappe.user.has_role(role))) return;
 
     frm.add_custom_button(__("Correct Reading"), () => correct_reading_dialog(frm));
+
+    if (pending_correction === frm.doc.name) {
+        pending_correction = null;
+        correct_reading_dialog(frm);
+    }
+}
+
+function correct_previous_fill(dialog, frm, previous_fill) {
+    const label = frm.doc.resource_type === "Truck" ? __("odometer") : __("hours");
+    frappe.confirm(
+        __("The previous {0} reading on {1} is the reading recorded on {2}. It has to be corrected on that fill, and this one will be re-measured from it automatically.<br><br>Open {2} to correct it?", [
+            label,
+            frappe.utils.escape_html(frm.doc.name),
+            `<b>${frappe.utils.escape_html(previous_fill)}</b>`,
+        ]),
+        () => {
+            dialog.hide();
+            pending_correction = previous_fill;
+            frappe.set_route("Form", "Fuel Used", previous_fill);
+        }
+    );
 }
 
 function correct_reading_dialog(frm) {
@@ -165,9 +191,7 @@ function correct_reading_dialog(frm) {
             fieldtype: "Float",
             default: recorded_previous,
             read_only: 1,
-            description: __("This is the reading recorded on {0}. To change it, correct that fill.", [
-                `<a href="/app/fuel-used/${encodeURIComponent(previous_fill)}">${frappe.utils.escape_html(previous_fill)}</a>`,
-            ]),
+            description: __("This is the reading recorded on {0}.", [frappe.utils.escape_html(previous_fill)]),
         }
         : {
             fieldname: "previous_reading",
@@ -182,6 +206,14 @@ function correct_reading_dialog(frm) {
         title: __("Correct {0}", [label]),
         fields: [
             previous_field,
+            ...(previous_fill
+                ? [{
+                    fieldname: "correct_previous",
+                    label: __("Correct Previous Reading"),
+                    fieldtype: "Button",
+                    click: () => correct_previous_fill(dialog, frm, previous_fill),
+                }]
+                : []),
             {
                 fieldname: "new_reading",
                 label: __("Reading on This Fill"),
